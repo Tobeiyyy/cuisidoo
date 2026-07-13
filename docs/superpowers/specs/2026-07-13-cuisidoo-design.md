@@ -277,9 +277,12 @@ shell is public (contains no data); all data and the generation endpoint
 
 **Design ground truth: the Ember mockups in `design-reference/mockups/`** —
 `App Screens.dc.html` (2a Home/Rezeptbibliothek, 2b Wochenplan,
-2c Einkaufsliste) and `Recipe Prototype.dc.html` (recipe detail / cooking
-prototype). Only the Ember screens are authoritative; page 1 of the Design
-project (Kupfer, Fjord directions) is discarded. The `_ds/organic-*`
+2c Einkaufsliste), `Recipe Prototype.dc.html` (recipe detail prototype), and
+`Recipe Detail.dc.html` (imported from the live Claude Design project via
+DesignSync; **only option 1c "Ember" is authoritative** — it is the sole
+cooking-mode reference: settings grid, Linkslauf/Varoma badges, circular
+timer, Pause/Weiter controls, progress segments. Options 1a Kupfer and
+1b Fjord in the same file are discarded directions). The `_ds/organic-*`
 stylesheet inside the export belongs to a different system — **ignore it**.
 
 Ember token system (extracted from the mockups):

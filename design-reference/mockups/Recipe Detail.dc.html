@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e8e6e1;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+a{color:inherit}a:hover{color:inherit}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.dv-desc{font:13px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.45);margin:4px 0 20px;max-width:720px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Rezeptdetail + Kochmodus — Drei Richtungen</span></div>
+<p class="dv-desc">Gleiche Rezeptdaten und Informationshierarchie, drei verschiedene Persönlichkeiten. TM6-Einstellungen (Zeit / Temperatur / Stufe) dominieren jeden Maschinenschritt. Manuelle Schritte sind visuell klar abgegrenzt. Portionen-Stepper ist interaktiv.</p>
+<div class="dv-opts">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- OPTION 1a — KUPFER (warm, artisanal)       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a> Kupfer — warm, handwerklich</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#FAF6F1;">
+<!-- Hero -->
+<div style="position:relative;height:240px;background:linear-gradient(135deg,#E8D5C4 0%,#D4B896 100%);display:flex;align-items:center;justify-content:center;">
+<div style="font:13px/1.4 ui-monospace,monospace;color:#8A7568;text-align:center;opacity:.7;">
+<div style="width:56px;height:56px;border:2px dashed #B09880;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9A8672" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+</div>Rezeptfoto</div>
+<div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between;">
+<div style="width:44px;height:44px;background:rgba(255,255,255,.85);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C1810" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
+<div style="width:44px;height:44px;background:rgba(255,255,255,.85);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C1810" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div style="padding:24px 20px 40px;">
+<h1 style="font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;color:#2C1810;margin:0 0 10px;line-height:1.2;">Hähnchen mit Spinat-Mandel-Pesto Tagliatelle</h1>
+<div style="display:flex;gap:16px;align-items:center;color:#8A7568;font-size:14px;margin-bottom:20px;">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>50 Min</span>
+<span>·</span>
+<span>{{ portions }} Portionen</span>
+</div>
+<!-- Portion stepper -->
+<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #EDE7DF;border-radius:14px;padding:12px 16px;margin-bottom:28px;">
+<span style="font-size:15px;color:#2C1810;font-weight:500;">Portionen</span>
+<div style="display:flex;align-items:center;gap:16px;">
+<div onClick="{{ dec }}" style="width:38px;height:38px;border:1.5px solid #D4C8BC;border-radius:19px;display:flex;align-items:center;justify-content:center;color:#8A7568;font-size:20px;cursor:pointer;" style-hover="background:#F0EBE4">−</div>
+<span style="font-size:22px;font-weight:600;color:#2C1810;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">{{ portions }}</span>
+<div onClick="{{ inc }}" style="width:38px;height:38px;background:#C17348;border-radius:19px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer;" style-hover="background:#A8603C">+</div>
+</div>
+</div>
+<!-- Zutaten -->
+<h2 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#2C1810;margin:0 0 12px;">Zutaten</h2>
+<sc-for list="{{ ingredients }}" as="ing" hint-placeholder-count="5">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid #EDE7DF;">
+<div style="font-size:15px;color:#2C1810;">{{ ing.name }}</div>
+<div style="font-size:15px;color:#8A7568;white-space:nowrap;margin-left:16px;">{{ ing.amount }}</div>
+</div>
+</sc-for>
+<!-- Zubereitung -->
+<h2 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#2C1810;margin:32px 0 16px;">Zubereitung</h2>
+<!-- Step 1: Machine simple -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<div style="width:30px;height:30px;border:2px solid #C17348;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#C17348;flex-shrink:0;">1</div>
+<span style="font-size:15px;color:#2C1810;line-height:1.4;">Parmesan in den Mixtopf geben und zerkleinern.</span>
+</div>
+<div style="background:#2C1810;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">10 Sek</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">—</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">10</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+</div>
+<!-- Step 2: Manual -->
+<div style="margin-bottom:20px;padding:16px;background:#F0EBE4;border-radius:14px;border-left:3px dashed #D4C8BC;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+<div style="width:30px;height:30px;background:#E4DDD4;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#8A7568;flex-shrink:0;">2</div>
+<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#8A7568;background:#DDD5CA;padding:3px 8px;border-radius:4px;">✋ Manuell</span>
+</div>
+<p style="font-size:15px;color:#5A4A3C;margin:0;line-height:1.5;font-style:italic;">Mixtopf spülen. Hähnchenbrust mit Salz und Pfeffer würzen und in den Varoma-Behälter einlegen.</p>
+</div>
+<!-- Step 3: Machine + Varoma + Linkslauf -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<div style="width:30px;height:30px;border:2px solid #C17348;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#C17348;flex-shrink:0;">3</div>
+<span style="font-size:15px;color:#2C1810;line-height:1.4;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</span>
+</div>
+<div style="background:#2C1810;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">20 Min</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">Varoma</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">1</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+<span style="font-size:11px;padding:5px 10px;background:#F4E8DF;color:#C17348;border-radius:20px;font-weight:600;">↺ Linkslauf</span>
+<span style="font-size:11px;padding:5px 10px;background:#F4E8DF;color:#C17348;border-radius:20px;font-weight:600;">Varoma-Aufsatz</span>
+</div>
+</div>
+<!-- Step 4: Machine with temperature -->
+<div style="margin-bottom:28px;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<div style="width:30px;height:30px;border:2px solid #C17348;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#C17348;flex-shrink:0;">4</div>
+<span style="font-size:15px;color:#2C1810;line-height:1.4;">Sahne und Pesto in den Mixtopf geben und erwärmen.</span>
+</div>
+<div style="background:#2C1810;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">3 Min</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">90°C</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#E8A87C;">2</div><div style="font-size:9px;color:#8A7568;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+</div>
+<div style="background:#C17348;border-radius:16px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#A8603C">
+<span style="font-size:17px;font-weight:600;color:#fff;">Kochen starten</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Cooking mode 1a -->
+<div style="font:500 11px system-ui;color:rgba(0,0,0,.35);padding:4px 0 0;">↓ Kochmodus — Schritt 3</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#2C1810;padding:32px 20px 40px;min-height:540px;display:flex;flex-direction:column;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+<span style="font-size:12px;color:#8A7568;text-transform:uppercase;letter-spacing:1px;">Schritt 3 von 4</span>
+<div style="display:flex;gap:4px;">
+<div style="width:24px;height:3px;background:#C17348;border-radius:2px;"></div>
+<div style="width:24px;height:3px;background:#C17348;border-radius:2px;"></div>
+<div style="width:24px;height:3px;background:#C17348;border-radius:2px;opacity:.4;"></div>
+<div style="width:24px;height:3px;background:#3A2A1E;border-radius:2px;"></div>
+</div>
+</div>
+<p style="font-size:16px;color:#D4C0AE;margin:0 0 24px;line-height:1.5;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</p>
+<div style="background:#3A2A1E;border-radius:20px;padding:24px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:16px;">
+<div><div style="font-size:32px;font-weight:700;color:#E8A87C;">20 Min</div><div style="font-size:10px;color:#8A7568;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:32px;font-weight:700;color:#E8A87C;">Varoma</div><div style="font-size:10px;color:#8A7568;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:32px;font-weight:700;color:#E8A87C;">1</div><div style="font-size:10px;color:#8A7568;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:28px;justify-content:center;">
+<span style="font-size:12px;padding:6px 14px;border:1px solid #5A4030;color:#E8A87C;border-radius:20px;font-weight:500;">↺ Linkslauf</span>
+<span style="font-size:12px;padding:6px 14px;border:1px solid #5A4030;color:#E8A87C;border-radius:20px;font-weight:500;">Varoma-Aufsatz</span>
+</div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;">
+<div style="position:relative;width:160px;height:160px;">
+<svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="72" fill="none" stroke="#3A2A1E" stroke-width="5"></circle><circle cx="80" cy="80" r="72" fill="none" stroke="#C17348" stroke-width="5" stroke-dasharray="452" stroke-dashoffset="110" stroke-linecap="round" transform="rotate(-90 80 80)"></circle></svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+<div style="font-size:38px;font-weight:700;color:#E8A87C;font-variant-numeric:tabular-nums;">18:42</div>
+<div style="font-size:10px;color:#8A7568;text-transform:uppercase;letter-spacing:1px;margin-top:2px;">verbleibend</div>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:12px;margin-top:auto;">
+<div style="flex:1;background:#3A2A1E;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#4A3A2E">
+<span style="font-size:16px;font-weight:600;color:#D4C0AE;">Pause</span>
+</div>
+<div style="flex:1;background:#C17348;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#A8603C">
+<span style="font-size:16px;font-weight:600;color:#fff;">Weiter →</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- OPTION 1b — FJORD (clean, nordic)          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a> Fjord — clean, nordisch</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#F7F8FA;">
+<!-- Hero -->
+<div style="position:relative;height:240px;background:linear-gradient(135deg,#D8E2EC 0%,#C4D1DE 100%);display:flex;align-items:center;justify-content:center;">
+<div style="font:13px/1.4 ui-monospace,monospace;color:#6B7B8D;text-align:center;opacity:.7;">
+<div style="width:56px;height:56px;border:2px dashed #9AACBD;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8899AA" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+</div>Rezeptfoto</div>
+<div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between;">
+<div style="width:44px;height:44px;background:rgba(255,255,255,.9);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
+<div style="width:44px;height:44px;background:rgba(255,255,255,.9);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div style="padding:24px 20px 40px;">
+<h1 style="font-size:24px;font-weight:700;color:#1A2332;margin:0 0 10px;line-height:1.25;letter-spacing:-0.3px;">Hähnchen mit Spinat-Mandel-Pesto Tagliatelle</h1>
+<div style="display:flex;gap:16px;align-items:center;color:#6B7B8D;font-size:14px;margin-bottom:20px;">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>50 Min</span>
+<span>·</span>
+<span>{{ portions }} Portionen</span>
+</div>
+<!-- Portion stepper -->
+<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:12px 16px;margin-bottom:28px;">
+<span style="font-size:15px;color:#1A2332;font-weight:500;">Portionen</span>
+<div style="display:flex;align-items:center;gap:16px;">
+<div onClick="{{ dec }}" style="width:38px;height:38px;border:1.5px solid #D0D5DC;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6B7B8D;font-size:20px;cursor:pointer;" style-hover="background:#F0F2F5">−</div>
+<span style="font-size:22px;font-weight:700;color:#1A2332;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">{{ portions }}</span>
+<div onClick="{{ inc }}" style="width:38px;height:38px;background:#3D6B9E;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer;" style-hover="background:#2F5A86">+</div>
+</div>
+</div>
+<!-- Zutaten -->
+<h2 style="font-size:18px;font-weight:700;color:#1A2332;margin:0 0 12px;letter-spacing:-0.2px;">Zutaten</h2>
+<sc-for list="{{ ingredients }}" as="ing" hint-placeholder-count="5">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid #ECEEF2;">
+<div style="font-size:15px;color:#1A2332;">{{ ing.name }}</div>
+<div style="font-size:15px;color:#6B7B8D;white-space:nowrap;margin-left:16px;font-variant-numeric:tabular-nums;">{{ ing.amount }}</div>
+</div>
+</sc-for>
+<!-- Zubereitung -->
+<h2 style="font-size:18px;font-weight:700;color:#1A2332;margin:32px 0 16px;letter-spacing:-0.2px;">Zubereitung</h2>
+<!-- Step 1: Machine — settings FIRST -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+<div style="width:28px;height:28px;background:#3D6B9E;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+<span style="font-size:13px;font-weight:600;color:#3D6B9E;text-transform:uppercase;letter-spacing:0.5px;">Thermomix</span>
+</div>
+<div style="background:#fff;border:1px solid #E5E8EC;border-left:4px solid #3D6B9E;border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:8px;">
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">10 Sek</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">—</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">10</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<p style="font-size:14px;color:#4A5568;margin:0;line-height:1.5;">Parmesan in den Mixtopf geben und zerkleinern.</p>
+</div>
+<!-- Step 2: Manual -->
+<div style="margin-bottom:20px;padding:16px;background:#F0F2F5;border-radius:12px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+<div style="width:28px;height:28px;background:#C0C7D0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+<span style="font-size:11px;font-weight:600;color:#6B7B8D;border:1.5px solid #C0C7D0;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">✋ Manuell</span>
+</div>
+<p style="font-size:14px;color:#4A5568;margin:0;line-height:1.5;">Mixtopf spülen. Hähnchenbrust mit Salz und Pfeffer würzen und in den Varoma-Behälter einlegen.</p>
+</div>
+<!-- Step 3: Machine + Varoma + Linkslauf -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+<div style="width:28px;height:28px;background:#3D6B9E;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+<span style="font-size:13px;font-weight:600;color:#3D6B9E;text-transform:uppercase;letter-spacing:0.5px;">Thermomix</span>
+</div>
+<div style="background:#fff;border:1px solid #E5E8EC;border-left:4px solid #3D6B9E;border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:8px;">
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">20 Min</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">Varoma</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">1</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:6px;margin-bottom:8px;">
+<span style="font-size:11px;padding:4px 10px;border:1.5px solid #3D6B9E;color:#3D6B9E;border-radius:6px;font-weight:600;">↺ Linkslauf</span>
+<span style="font-size:11px;padding:4px 10px;border:1.5px solid #3D6B9E;color:#3D6B9E;border-radius:6px;font-weight:600;">Varoma-Aufsatz</span>
+</div>
+<p style="font-size:14px;color:#4A5568;margin:0;line-height:1.5;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</p>
+</div>
+<!-- Step 4: Machine with temperature -->
+<div style="margin-bottom:28px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+<div style="width:28px;height:28px;background:#3D6B9E;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">4</div>
+<span style="font-size:13px;font-weight:600;color:#3D6B9E;text-transform:uppercase;letter-spacing:0.5px;">Thermomix</span>
+</div>
+<div style="background:#fff;border:1px solid #E5E8EC;border-left:4px solid #3D6B9E;border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:8px;">
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">3 Min</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">90°C</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:22px;font-weight:700;color:#1A2332;">2</div><div style="font-size:9px;color:#8B96A5;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<p style="font-size:14px;color:#4A5568;margin:0;line-height:1.5;">Sahne und Pesto in den Mixtopf geben und erwärmen.</p>
+</div>
+<div style="background:#3D6B9E;border-radius:12px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#2F5A86">
+<span style="font-size:17px;font-weight:600;color:#fff;">Kochen starten</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Cooking mode 1b -->
+<div style="font:500 11px system-ui;color:rgba(0,0,0,.35);padding:4px 0 0;">↓ Kochmodus — Schritt 3</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#fff;padding:32px 20px 40px;min-height:540px;display:flex;flex-direction:column;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+<span style="font-size:13px;font-weight:600;color:#1A2332;">Schritt 3 von 4</span>
+<span style="font-size:12px;color:#6B7B8D;">Thermomix</span>
+</div>
+<div style="height:4px;background:#ECEEF2;border-radius:2px;overflow:hidden;margin-bottom:24px;">
+<div style="width:62%;height:100%;background:#3D6B9E;border-radius:2px;"></div>
+</div>
+<div style="background:#F7F8FA;border:1px solid #E5E8EC;border-left:4px solid #3D6B9E;border-radius:14px;padding:24px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:16px;">
+<div><div style="font-size:30px;font-weight:700;color:#1A2332;">20 Min</div><div style="font-size:10px;color:#8B96A5;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:30px;font-weight:700;color:#1A2332;">Varoma</div><div style="font-size:10px;color:#8B96A5;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:30px;font-weight:700;color:#1A2332;">1</div><div style="font-size:10px;color:#8B96A5;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:6px;margin-bottom:16px;">
+<span style="font-size:12px;padding:5px 12px;border:1.5px solid #3D6B9E;color:#3D6B9E;border-radius:8px;font-weight:600;">↺ Linkslauf</span>
+<span style="font-size:12px;padding:5px 12px;border:1.5px solid #3D6B9E;color:#3D6B9E;border-radius:8px;font-weight:600;">Varoma-Aufsatz</span>
+</div>
+<p style="font-size:15px;color:#4A5568;margin:0 0 24px;line-height:1.5;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</p>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+<div style="font-size:11px;color:#8B96A5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Verbleibend</div>
+<div style="font-size:52px;font-weight:700;color:#1A2332;font-variant-numeric:tabular-nums;letter-spacing:-1px;">18:42</div>
+<div style="width:200px;height:4px;background:#ECEEF2;border-radius:2px;overflow:hidden;margin-top:12px;">
+<div style="width:75%;height:100%;background:#3D6B9E;border-radius:2px;"></div>
+</div>
+</div>
+<div style="display:flex;gap:12px;margin-top:auto;">
+<div style="flex:1;background:#F0F2F5;border-radius:12px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#E5E8EC">
+<span style="font-size:16px;font-weight:600;color:#4A5568;">Pause</span>
+</div>
+<div style="flex:1;background:#3D6B9E;border-radius:12px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#2F5A86">
+<span style="font-size:16px;font-weight:600;color:#fff;">Weiter →</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- OPTION 1c — EMBER (dark-first, bold)       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a> Ember — dark-first, bold</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;border-color:rgba(255,255,255,.06);">
+<div style="background:#111113;">
+<!-- Hero -->
+<div style="position:relative;height:240px;background:linear-gradient(135deg,#1E1E20 0%,#141416 100%);display:flex;align-items:center;justify-content:center;">
+<div style="position:absolute;top:60px;left:50%;transform:translateX(-50%);width:120px;height:120px;background:radial-gradient(circle,rgba(232,115,74,.12) 0%,transparent 70%);border-radius:50%;"></div>
+<div style="font:13px/1.4 ui-monospace,monospace;color:#6E6E73;text-align:center;position:relative;">
+<div style="width:56px;height:56px;border:2px dashed #3A3A3C;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A4A4E" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+</div>Rezeptfoto</div>
+<div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between;">
+<div style="width:44px;height:44px;background:rgba(28,28,30,.85);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8E8ED" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
+<div style="width:44px;height:44px;background:rgba(28,28,30,.85);border-radius:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8E8ED" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div style="padding:24px 20px 40px;">
+<h1 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8E8ED;margin:0 0 10px;line-height:1.25;letter-spacing:-0.3px;">Hähnchen mit Spinat-Mandel-Pesto Tagliatelle</h1>
+<div style="display:flex;gap:16px;align-items:center;color:#8E8E93;font-size:14px;margin-bottom:20px;">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>50 Min</span>
+<span>·</span>
+<span>{{ portions }} Portionen</span>
+</div>
+<!-- Portion stepper -->
+<div style="display:flex;align-items:center;justify-content:space-between;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:14px;padding:12px 16px;margin-bottom:28px;">
+<span style="font-size:15px;color:#E8E8ED;font-weight:500;">Portionen</span>
+<div style="display:flex;align-items:center;gap:16px;">
+<div onClick="{{ dec }}" style="width:38px;height:38px;border:1.5px solid #3A3A3C;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#8E8E93;font-size:20px;cursor:pointer;" style-hover="background:#222224">−</div>
+<span style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#E8E8ED;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">{{ portions }}</span>
+<div onClick="{{ inc }}" style="width:38px;height:38px;background:#E8734A;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer;" style-hover="background:#D4623C">+</div>
+</div>
+</div>
+<!-- Zutaten -->
+<h2 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#E8E8ED;margin:0 0 12px;">Zutaten</h2>
+<sc-for list="{{ ingredients }}" as="ing" hint-placeholder-count="5">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid #222224;">
+<div style="font-size:15px;color:#D0D0D5;">{{ ing.name }}</div>
+<div style="font-family:'Space Grotesk',sans-serif;font-size:15px;color:#E8734A;white-space:nowrap;margin-left:16px;font-weight:500;font-variant-numeric:tabular-nums;">{{ ing.amount }}</div>
+</div>
+</sc-for>
+<!-- Zubereitung -->
+<h2 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#E8E8ED;margin:32px 0 16px;">Zubereitung</h2>
+<!-- Step 1: Machine simple -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px;">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#E8734A;line-height:1;">1</span>
+<span style="font-size:15px;color:#D0D0D5;line-height:1.4;">Parmesan in den Mixtopf geben und zerkleinern.</span>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">10 Sek</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">—</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">10</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+</div>
+<!-- Step 2: Manual -->
+<div style="margin-bottom:20px;padding:16px;background:#161618;border:1px solid #222224;border-radius:14px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#3A3A3C;line-height:1;">2</span>
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#8E8E93;background:#222224;padding:3px 8px;border-radius:6px;">✋ Manuell</span>
+</div>
+<p style="font-size:15px;color:#8E8E93;margin:0;line-height:1.5;">Mixtopf spülen. Hähnchenbrust mit Salz und Pfeffer würzen und in den Varoma-Behälter einlegen.</p>
+</div>
+<!-- Step 3: Machine + Varoma + Linkslauf -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px;">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#E8734A;line-height:1;">3</span>
+<span style="font-size:15px;color:#D0D0D5;line-height:1.4;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</span>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">20 Min</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">Varoma</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">1</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+<span style="font-size:11px;padding:5px 10px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">↺ Linkslauf</span>
+<span style="font-size:11px;padding:5px 10px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">Varoma-Aufsatz</span>
+</div>
+</div>
+<!-- Step 4: Machine with temperature -->
+<div style="margin-bottom:28px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px;">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#E8734A;line-height:1;">4</span>
+<span style="font-size:15px;color:#D0D0D5;line-height:1.4;">Sahne und Pesto in den Mixtopf geben und erwärmen.</span>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;padding:18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;">
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">3 Min</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">90°C</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#E8734A;">2</div><div style="font-size:9px;color:#6E6E73;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+</div>
+<div style="background:#E8734A;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#D4623C">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;color:#fff;">Kochen starten</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Cooking mode 1c -->
+<div style="font:500 11px system-ui;color:rgba(0,0,0,.35);padding:4px 0 0;">↓ Kochmodus — Schritt 3</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;border-color:rgba(255,255,255,.06);">
+<div style="background:#0A0A0A;padding:32px 20px 40px;min-height:540px;display:flex;flex-direction:column;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:#E8E8ED;">Schritt 3 / 4</span>
+<div style="display:flex;gap:5px;">
+<div style="width:20px;height:3px;background:#E8734A;border-radius:2px;"></div>
+<div style="width:20px;height:3px;background:#E8734A;border-radius:2px;"></div>
+<div style="width:20px;height:3px;background:#E8734A;border-radius:2px;opacity:.4;"></div>
+<div style="width:20px;height:3px;background:#222224;border-radius:2px;"></div>
+</div>
+</div>
+<div style="background:#141416;border:1px solid #222224;border-radius:20px;padding:28px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;margin-bottom:16px;">
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:#E8734A;">20 Min</div><div style="font-size:10px;color:#6E6E73;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:#E8734A;">Varoma</div><div style="font-size:10px;color:#6E6E73;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:#E8734A;">1</div><div style="font-size:10px;color:#6E6E73;margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+<span style="font-size:12px;padding:5px 12px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">↺ Linkslauf</span>
+<span style="font-size:12px;padding:5px 12px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">Varoma-Aufsatz</span>
+</div>
+<p style="font-size:15px;color:#8E8E93;margin:0 0 20px;line-height:1.5;text-align:center;">Wasser einfüllen, Varoma aufsetzen und Hähnchen garen.</p>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;">
+<div style="position:relative;width:180px;height:180px;">
+<svg width="180" height="180" viewBox="0 0 180 180"><circle cx="90" cy="90" r="82" fill="none" stroke="#1A1A1C" stroke-width="4"></circle><circle cx="90" cy="90" r="82" fill="none" stroke="#E8734A" stroke-width="4" stroke-dasharray="515" stroke-dashoffset="128" stroke-linecap="round" transform="rotate(-90 90 90)"></circle></svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+<div style="font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:700;color:#E8734A;font-variant-numeric:tabular-nums;">18:42</div>
+<div style="font-size:10px;color:#6E6E73;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;">verbleibend</div>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:12px;margin-top:auto;">
+<div style="flex:1;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#222224">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#8E8E93;">Pause</span>
+</div>
+<div style="flex:1;background:#E8734A;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#D4623C">
+<span style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#fff;">Weiter →</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Nächste Schritte: „Mach <a class="dv-oid" href="#1a">1a</a> in Dark Mode" · „Kombiniere Typo von <a class="dv-oid" href="#1c">1c</a> mit den Farben von <a class="dv-oid" href="#1a">1a</a>" · „Baue <a class="dv-oid" href="#1b">1b</a> als vollen Prototyp aus" </p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { portions: 4 };
+  renderVals() {
+    const p = this.state.portions;
+    const s = p / 4;
+    const r = (v) => String(Math.round(v * s));
+    return {
+      portions: p,
+      inc: () => this.setState(prev => ({ portions: Math.min(12, prev.portions + 1) })),
+      dec: () => this.setState(prev => ({ portions: Math.max(1, prev.portions - 1) })),
+      ingredients: [
+        { name: 'Parmesan', amount: r(80) + ' g' },
+        { name: 'Mandeln', amount: r(30) + ' g' },
+        { name: 'Knoblauchzehen', amount: r(2) + ' Stk' },
+        { name: 'Frischer Spinat', amount: r(100) + ' g' },
+        { name: 'Olivenöl', amount: r(50) + ' g' },
+        { name: 'Hähnchenbrust', amount: r(400) + ' g' },
+        { name: 'Sahne', amount: r(200) + ' g' },
+        { name: 'Tagliatelle', amount: r(500) + ' g' },
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
