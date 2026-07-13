@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e8e6e1;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}a:hover{color:inherit}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#111113;border:1px solid rgba(255,255,255,.06);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.2);overflow:hidden}
+.dv-opt:target .dv-oid{background:#E8734A;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.dv-desc{font:13px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.45);margin:4px 0 20px;max-width:720px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Home · Wochenplan · Einkaufsliste — Ember</span></div>
+<p class="dv-desc">Drei Screens, gleiche Ember-Sprache: Dark-first, Space Grotesk, Coral-Akzent. Bottom-Nav durchgängig. Alle interaktiven Elemente (Suche, Tags, Abhaken) funktionieren.</p>
+<div class="dv-opts">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2a — HOME / REZEPTBIBLIOTHEK              -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a> Home / Rezeptbibliothek</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#111113;min-height:780px;display:flex;flex-direction:column;">
+<div style="flex:1;padding:56px 20px 20px;overflow-y:auto;">
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+<div>
+<div style="font-size:13px;color:#6E6E73;margin-bottom:2px;">Guten Abend</div>
+<h1 style="font-size:24px;font-weight:700;color:#E8E8ED;margin:0;letter-spacing:-0.3px;">Meine Rezepte</h1>
+</div>
+<div style="width:40px;height:40px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:20px;display:flex;align-items:center;justify-content:center;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<!-- Search -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<span style="font-size:14px;color:#6E6E73;">Rezept suchen…</span>
+</div>
+<!-- Tags -->
+<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:24px;padding-bottom:2px;">
+<span style="font-size:12px;padding:7px 14px;background:#E8734A;color:#fff;border-radius:20px;font-weight:600;white-space:nowrap;flex-shrink:0;">Alle</span>
+<span style="font-size:12px;padding:7px 14px;background:#1A1A1C;border:1px solid #2C2C2E;color:#8E8E93;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0;">Hauptgericht</span>
+<span style="font-size:12px;padding:7px 14px;background:#1A1A1C;border:1px solid #2C2C2E;color:#8E8E93;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0;">Beilage</span>
+<span style="font-size:12px;padding:7px 14px;background:#1A1A1C;border:1px solid #2C2C2E;color:#8E8E93;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0;">Suppe</span>
+<span style="font-size:12px;padding:7px 14px;background:#1A1A1C;border:1px solid #2C2C2E;color:#8E8E93;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0;">Dessert</span>
+</div>
+<!-- Recipe cards grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+<!-- Card 1 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#2A1E18,#1E1412);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Hähnchen Spinat-Pesto Tagliatelle</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>50 Min</span><span>·</span><span>4 Port.</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#1A1E18,#121614);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Risotto mit Pilzen</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>35 Min</span><span>·</span><span>4 Port.</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#1E1A18,#161210);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Kürbis-suppe mit Ingwer</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>25 Min</span><span>·</span><span>6 Port.</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#181A1E,#101216);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Lachs mit Dill-Sauce</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>30 Min</span><span>·</span><span>2 Port.</span>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#1E181A,#141012);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Kartoffel-gratin</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>45 Min</span><span>·</span><span>4 Port.</span>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:16px;overflow:hidden;">
+<div style="height:120px;background:linear-gradient(135deg,#18181E,#101016);display:flex;align-items:center;justify-content:center;">
+<span style="font-size:10px;color:#6E6E73;">Foto</span>
+</div>
+<div style="padding:12px;">
+<div style="font-size:13px;font-weight:600;color:#E8E8ED;line-height:1.3;margin-bottom:8px;">Schoko-Lava-Kuchen</div>
+<div style="display:flex;gap:8px;color:#6E6E73;font-size:11px;">
+<span>20 Min</span><span>·</span><span>4 Port.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Nav -->
+<div style="flex-shrink:0;background:#0A0A0A;border-top:1px solid #1A1A1C;padding:8px 12px 28px;display:flex;justify-content:space-around;">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8734A" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+<span style="font-size:10px;color:#E8734A;font-weight:600;">Home</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Entdecken</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Wochenplan</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Einkauf</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Mehr</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2b — WOCHENPLAN                            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a> Wochenplan</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#111113;min-height:780px;display:flex;flex-direction:column;">
+<div style="flex:1;padding:56px 20px 20px;overflow-y:auto;">
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+<h1 style="font-size:24px;font-weight:700;color:#E8E8ED;margin:0;letter-spacing:-0.3px;">Wochenplan</h1>
+<div style="display:flex;gap:8px;align-items:center;">
+<span style="font-size:13px;color:#8E8E93;white-space:nowrap;">KW 28</span>
+<div style="display:flex;gap:4px;">
+<div style="width:32px;height:32px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
+<div style="width:32px;height:32px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Monday — 2 dishes -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#E8E8ED;">Montag</span>
+<span style="font-size:12px;color:#6E6E73;">7. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#2A1E18,#1E1412);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Hähnchen Spinat-Pesto Tagliatelle</div>
+<div style="font-size:11px;color:#6E6E73;">50 Min · 4 Portionen</div>
+</div>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#1E181A,#141012);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Kartoffelgratin</div>
+<div style="font-size:11px;color:#6E6E73;">45 Min · 4 Portionen</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Tuesday — 1 dish -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#E8E8ED;">Dienstag</span>
+<span style="font-size:12px;color:#6E6E73;">8. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#1A1E18,#121614);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Risotto mit Pilzen</div>
+<div style="font-size:11px;color:#6E6E73;">35 Min · 4 Portionen</div>
+</div>
+</div>
+</div>
+
+<!-- Wednesday — empty -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#E8E8ED;">Mittwoch</span>
+<span style="font-size:12px;color:#6E6E73;">9. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="border:1px dashed #2C2C2E;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3A3A3C" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+<span style="font-size:12px;color:#3A3A3C;">Rezept hinzufügen</span>
+</div>
+</div>
+
+<!-- Thursday — 1 dish -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#E8E8ED;">Donnerstag</span>
+<span style="font-size:12px;color:#6E6E73;">10. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#1E1A18,#161210);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Kürbissuppe mit Ingwer</div>
+<div style="font-size:11px;color:#6E6E73;">25 Min · 6 Portionen</div>
+</div>
+</div>
+</div>
+
+<!-- Friday — 2 dishes -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#E8E8ED;">Freitag</span>
+<span style="font-size:12px;color:#6E6E73;">11. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#181A1E,#101216);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Lachs mit Dill-Sauce</div>
+<div style="font-size:11px;color:#6E6E73;">30 Min · 2 Portionen</div>
+</div>
+</div>
+<div style="background:#1A1A1C;border:1px solid #2C2C2E;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#18181E,#101016);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:#6E6E73;">Foto</span></div>
+<div style="flex:1;min-width:0;">
+<div style="font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px;">Schoko-Lava-Kuchen</div>
+<div style="font-size:11px;color:#6E6E73;">20 Min · 4 Portionen</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Saturday — empty -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#6E6E73;">Samstag</span>
+<span style="font-size:12px;color:#3A3A3C;">12. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="border:1px dashed #2C2C2E;border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;">
+<span style="font-size:12px;color:#3A3A3C;">Rezept hinzufügen</span>
+</div>
+</div>
+
+<!-- Sunday — empty -->
+<div style="margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;align-items:baseline;gap:8px;">
+<span style="font-size:15px;font-weight:700;color:#6E6E73;">Sonntag</span>
+<span style="font-size:12px;color:#3A3A3C;">13. Jul</span>
+</div>
+<div style="width:28px;height:28px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+<div style="border:1px dashed #2C2C2E;border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;">
+<span style="font-size:12px;color:#3A3A3C;">Rezept hinzufügen</span>
+</div>
+</div>
+</div>
+<!-- Bottom Nav -->
+<div style="flex-shrink:0;background:#0A0A0A;border-top:1px solid #1A1A1C;padding:8px 12px 28px;display:flex;justify-content:space-around;">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Home</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Entdecken</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8734A" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+<span style="font-size:10px;color:#E8734A;font-weight:600;">Wochenplan</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Einkauf</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Mehr</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2c — EINKAUFSLISTE                         -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a> Einkaufsliste</div>
+<div class="dv-card" style="width:390px;border-radius:32px;overflow:hidden;">
+<div style="background:#111113;min-height:780px;display:flex;flex-direction:column;">
+<div style="flex:1;padding:56px 20px 20px;overflow-y:auto;">
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+<h1 style="font-size:24px;font-weight:700;color:#E8E8ED;margin:0;letter-spacing:-0.3px;">Einkaufsliste</h1>
+<div style="display:flex;gap:8px;">
+<div style="width:36px;height:36px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+<div style="width:36px;height:36px;background:#1A1A1C;border:1px solid #2C2C2E;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="12" cy="6" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="18" r="1"/></svg>
+</div>
+</div>
+</div>
+<div style="font-size:13px;color:#6E6E73;margin-bottom:20px;">KW 28 · 4 Rezepte · 23 Zutaten</div>
+
+<!-- Source pills -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;">
+<span style="font-size:11px;padding:5px 10px;background:#E8734A22;color:#E8734A;border-radius:8px;font-weight:600;">Hähnchen Pesto</span>
+<span style="font-size:11px;padding:5px 10px;background:#E8734A22;color:#E8734A;border-radius:8px;font-weight:600;">Risotto</span>
+<span style="font-size:11px;padding:5px 10px;background:#E8734A22;color:#E8734A;border-radius:8px;font-weight:600;">Kürbissuppe</span>
+<span style="font-size:11px;padding:5px 10px;background:#E8734A22;color:#E8734A;border-radius:8px;font-weight:600;">Lachs</span>
+</div>
+
+<!-- Fleisch & Fisch -->
+<div style="margin-bottom:24px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8734A;">Fleisch &amp; Fisch</span>
+<div style="flex:1;height:1px;background:#2C2C2E;"></div>
+</div>
+<sc-for list="{{ meatItems }}" as="it" hint-placeholder-count="3">
+<div onClick="{{ it.tap }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">
+<sc-if value="{{ it.on }}" hint-placeholder-val="{{ false }}">
+<div style="width:22px;height:22px;background:#E8734A;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+</div>
+</sc-if>
+<sc-if value="{{ it.off }}" hint-placeholder-val="{{ true }}">
+<div style="width:22px;height:22px;border:2px solid #3A3A3C;border-radius:6px;flex-shrink:0;"></div>
+</sc-if>
+<div style="flex:1;font-size:15px;color:#D0D0D5;">{{ it.name }}</div>
+<div style="font-size:14px;color:#E8734A;font-weight:500;font-variant-numeric:tabular-nums;">{{ it.amount }}</div>
+</div>
+</sc-for>
+</div>
+
+<!-- Milchprodukte -->
+<div style="margin-bottom:24px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8734A;">Milchprodukte</span>
+<div style="flex:1;height:1px;background:#2C2C2E;"></div>
+</div>
+<sc-for list="{{ dairyItems }}" as="it" hint-placeholder-count="2">
+<div onClick="{{ it.tap }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">
+<sc-if value="{{ it.on }}" hint-placeholder-val="{{ false }}">
+<div style="width:22px;height:22px;background:#E8734A;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+</div>
+</sc-if>
+<sc-if value="{{ it.off }}" hint-placeholder-val="{{ true }}">
+<div style="width:22px;height:22px;border:2px solid #3A3A3C;border-radius:6px;flex-shrink:0;"></div>
+</sc-if>
+<div style="flex:1;font-size:15px;color:#D0D0D5;">{{ it.name }}</div>
+<div style="font-size:14px;color:#E8734A;font-weight:500;font-variant-numeric:tabular-nums;">{{ it.amount }}</div>
+</div>
+</sc-for>
+</div>
+
+<!-- Gemüse & Kräuter -->
+<div style="margin-bottom:24px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8734A;">Gemüse &amp; Kräuter</span>
+<div style="flex:1;height:1px;background:#2C2C2E;"></div>
+</div>
+<sc-for list="{{ veggieItems }}" as="it" hint-placeholder-count="4">
+<div onClick="{{ it.tap }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">
+<sc-if value="{{ it.on }}" hint-placeholder-val="{{ false }}">
+<div style="width:22px;height:22px;background:#E8734A;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+</div>
+</sc-if>
+<sc-if value="{{ it.off }}" hint-placeholder-val="{{ true }}">
+<div style="width:22px;height:22px;border:2px solid #3A3A3C;border-radius:6px;flex-shrink:0;"></div>
+</sc-if>
+<div style="flex:1;font-size:15px;color:#D0D0D5;">{{ it.name }}</div>
+<div style="font-size:14px;color:#E8734A;font-weight:500;font-variant-numeric:tabular-nums;">{{ it.amount }}</div>
+</div>
+</sc-for>
+</div>
+
+<!-- Trockenwaren -->
+<div style="margin-bottom:24px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8734A;">Trockenwaren &amp; Sonstiges</span>
+<div style="flex:1;height:1px;background:#2C2C2E;"></div>
+</div>
+<sc-for list="{{ dryItems }}" as="it" hint-placeholder-count="3">
+<div onClick="{{ it.tap }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">
+<sc-if value="{{ it.on }}" hint-placeholder-val="{{ false }}">
+<div style="width:22px;height:22px;background:#E8734A;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+</div>
+</sc-if>
+<sc-if value="{{ it.off }}" hint-placeholder-val="{{ true }}">
+<div style="width:22px;height:22px;border:2px solid #3A3A3C;border-radius:6px;flex-shrink:0;"></div>
+</sc-if>
+<div style="flex:1;font-size:15px;color:#D0D0D5;">{{ it.name }}</div>
+<div style="font-size:14px;color:#E8734A;font-weight:500;font-variant-numeric:tabular-nums;">{{ it.amount }}</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+<!-- Bottom Nav -->
+<div style="flex-shrink:0;background:#0A0A0A;border-top:1px solid #1A1A1C;padding:8px 12px 28px;display:flex;justify-content:space-around;">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Home</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Entdecken</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Wochenplan</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8734A" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+<span style="font-size:10px;color:#E8734A;font-weight:600;">Einkauf</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+<span style="font-size:10px;color:#6E6E73;">Mehr</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Alle Checkboxen in <a class="dv-oid" href="#2c">2c</a> sind interaktiv. Nächste Schritte: Kombination zum vollen Prototyp · Entdecken-Screen · Einstellungen-Screen</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { shopChecked: {} };
+
+  componentDidMount() {
+    try {
+      const s = JSON.parse(localStorage.getItem('ember_shop') || '{}');
+      if (s.shopChecked) this.setState({ shopChecked: s.shopChecked });
+    } catch(e) {}
+  }
+
+  componentDidUpdate() {
+    try { localStorage.setItem('ember_shop', JSON.stringify({ shopChecked: this.state.shopChecked })); } catch(e) {}
+  }
+
+  _item(key, name, amount) {
+    const on = !!this.state.shopChecked[key];
+    return { name, amount, on, off: !on, tap: () => this.setState(s => ({ shopChecked: { ...s.shopChecked, [key]: !s.shopChecked[key] } })) };
+  }
+
+  renderVals() {
+    return {
+      meatItems: [
+        this._item('m1', 'Hähnchenbrust', '400 g'),
+        this._item('m2', 'Lachsfilet', '300 g'),
+      ],
+      dairyItems: [
+        this._item('d1', 'Parmesan', '80 g'),
+        this._item('d2', 'Sahne', '400 g'),
+        this._item('d3', 'Butter', '50 g'),
+      ],
+      veggieItems: [
+        this._item('v1', 'Frischer Spinat', '100 g'),
+        this._item('v2', 'Champignons', '250 g'),
+        this._item('v3', 'Hokkaido-Kürbis', '600 g'),
+        this._item('v4', 'Knoblauchzehen', '6 Stk'),
+        this._item('v5', 'Ingwer', '20 g'),
+        this._item('v6', 'Dill', '1 Bund'),
+        this._item('v7', 'Zwiebeln', '3 Stk'),
+      ],
+      dryItems: [
+        this._item('t1', 'Tagliatelle', '500 g'),
+        this._item('t2', 'Mandeln', '30 g'),
+        this._item('t3', 'Arborio-Reis', '300 g'),
+        this._item('t4', 'Olivenöl', '100 g'),
+        this._item('t5', 'Gemüsebrühe', '1 L'),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111113;--cbg:#0A0A0A;--sf:#1A1A1C;--tx:#E8E8ED;--bt:#D0D0D5;--st:#8E8E93;--mt:#6E6E73;--bd:#2C2C2E;--bl:#3A3A3C;--bf:rgba(255,255,255,.08);--hb:linear-gradient(135deg,#1E1E20,#141416);--nb:rgba(28,28,30,.85);--mb:#161618;--gb:linear-gradient(transparent,#111113 24px)}
+body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;background:var(--bg);color:var(--tx)}
+a{color:#E8734A}a:hover{color:#D4623C}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</helmet>
+
+<!-- ═══ RECIPE DETAIL ═══ -->
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg);">
+<!-- Hero -->
+<div style="position:relative;height:220px;background:var(--hb);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;background:radial-gradient(circle,rgba(232,115,74,.1),transparent 70%);border-radius:50%;"></div>
+<span style="font-size:13px;color:var(--mt);position:relative;">Rezeptfoto</span>
+<div style="position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;">
+<div style="width:44px;height:44px;background:var(--nb);border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bf);backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
+<div style="display:flex;gap:8px;">
+<div onClick="{{ toggleTheme }}" style="width:44px;height:44px;background:var(--nb);border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bf);backdrop-filter:blur(8px);cursor:pointer;">
+<sc-if value="{{ isDark }}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></sc-if>
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg></sc-if>
+</div>
+<div style="width:44px;height:44px;background:var(--nb);border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bf);backdrop-filter:blur(8px);">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div style="padding:20px 20px 110px;">
+<h1 style="font-size:24px;font-weight:700;color:var(--tx);margin:0 0 10px;line-height:1.25;letter-spacing:-0.3px;">Hähnchen mit Spinat-Mandel-Pesto Tagliatelle</h1>
+<div style="display:flex;gap:16px;color:var(--st);font-size:14px;margin-bottom:20px;">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>50 Min</span>
+<span>·</span>
+<span>{{ portions }} Portionen</span>
+</div>
+<!-- Stepper -->
+<div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 16px;margin-bottom:28px;">
+<span style="font-size:15px;font-weight:500;color:var(--tx);">Portionen</span>
+<div style="display:flex;align-items:center;gap:16px;">
+<div onClick="{{ dec }}" style="width:38px;height:38px;border:1.5px solid var(--bl);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--st);font-size:20px;cursor:pointer;">−</div>
+<span style="font-size:22px;font-weight:700;color:var(--tx);min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">{{ portions }}</span>
+<div onClick="{{ inc }}" style="width:38px;height:38px;background:#E8734A;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer;">+</div>
+</div>
+</div>
+<!-- Zutaten -->
+<h2 style="font-size:18px;font-weight:700;color:var(--tx);margin:0 0 12px;">Zutaten</h2>
+<sc-for list="{{ ingredients }}" as="ing" hint-placeholder-count="5">
+<div onClick="{{ ing.tap }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bf);cursor:pointer;">
+<sc-if value="{{ ing.on }}" hint-placeholder-val="{{ false }}">
+<div style="width:24px;height:24px;background:#E8734A;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+</div>
+</sc-if>
+<sc-if value="{{ ing.off }}" hint-placeholder-val="{{ true }}">
+<div style="width:24px;height:24px;border:2px solid var(--bl);border-radius:7px;flex-shrink:0;"></div>
+</sc-if>
+<div style="flex:1;min-width:0;">
+<div style="font-size:15px;color:var(--bt);">{{ ing.name }}</div>
+<sc-if value="{{ ing.sub }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:12px;color:var(--mt);margin-top:1px;">{{ ing.sub }}</div>
+</sc-if>
+</div>
+<div style="font-size:15px;color:#E8734A;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ ing.amount }}</div>
+</div>
+</sc-for>
+<!-- Zubereitung -->
+<h2 style="font-size:18px;font-weight:700;color:var(--tx);margin:32px 0 16px;">Zubereitung</h2>
+<sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+<sc-if value="{{ s.machine }}" hint-placeholder-val="{{ true }}">
+<div style="margin-bottom:20px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px;">
+<span style="font-size:32px;font-weight:700;color:#E8734A;line-height:1;">{{ s.num }}</span>
+<span style="font-size:15px;color:var(--bt);line-height:1.4;">{{ s.text }}</span>
+</div>
+<div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:16px 10px;display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;">
+<div><div style="font-size:20px;font-weight:700;color:#E8734A;">{{ s.zeit }}</div><div style="font-size:9px;color:var(--mt);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:20px;font-weight:700;color:#E8734A;">{{ s.temp }}</div><div style="font-size:9px;color:var(--mt);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:20px;font-weight:700;color:#E8734A;">{{ s.stufe }}</div><div style="font-size:9px;color:var(--mt);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<sc-if value="{{ s.hasEq }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:8px;margin-top:10px;">
+<sc-if value="{{ s.eq1 }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;padding:5px 10px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">{{ s.eq1 }}</span></sc-if>
+<sc-if value="{{ s.eq2 }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;padding:5px 10px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">{{ s.eq2 }}</span></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ s.manual }}" hint-placeholder-val="{{ false }}">
+<div style="margin-bottom:20px;padding:16px;background:var(--mb);border:1px solid var(--bd);border-radius:14px;">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+<span style="font-size:32px;font-weight:700;color:var(--bl);line-height:1;">{{ s.num }}</span>
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--st);background:var(--sf);padding:3px 8px;border-radius:6px;">✋ Manuell</span>
+</div>
+<p style="font-size:15px;color:var(--st);margin:0;line-height:1.5;">{{ s.text }}</p>
+</div>
+</sc-if>
+</sc-for>
+</div>
+<!-- Sticky button -->
+<div style="position:sticky;bottom:0;padding:12px 20px 28px;background:var(--gb);">
+<div onClick="{{ startCook }}" style="background:#E8734A;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#D4623C">
+<span style="font-size:17px;font-weight:600;color:#fff;">Kochen starten</span>
+</div>
+</div>
+</div>
+</sc-if>
+
+<!-- ═══ COOKING MODE ═══ -->
+<sc-if value="{{ isCooking }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:430px;margin:0 auto;min-height:100vh;background:var(--cbg);display:flex;flex-direction:column;padding:20px 20px 28px;">
+<!-- Top bar -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-shrink:0;">
+<div onClick="{{ exitCook }}" style="width:40px;height:40px;background:var(--sf);border:1px solid var(--bd);border-radius:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--st)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+</div>
+<span style="font-size:14px;font-weight:600;color:var(--tx);">{{ stepLabel }}</span>
+<div onClick="{{ toggleTheme }}" style="width:40px;height:40px;background:var(--sf);border:1px solid var(--bd);border-radius:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+<sc-if value="{{ isDark }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--st)" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></sc-if>
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--st)" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg></sc-if>
+</div>
+</div>
+<!-- Machine step -->
+<sc-if value="{{ cur.machine }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;">
+<div style="background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:24px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;margin-bottom:14px;flex-shrink:0;">
+<div><div style="font-size:30px;font-weight:700;color:#E8734A;">{{ cur.zeit }}</div><div style="font-size:10px;color:var(--mt);margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Zeit</div></div>
+<div><div style="font-size:30px;font-weight:700;color:#E8734A;">{{ cur.temp }}</div><div style="font-size:10px;color:var(--mt);margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Temperatur</div></div>
+<div><div style="font-size:30px;font-weight:700;color:#E8734A;">{{ cur.stufe }}</div><div style="font-size:10px;color:var(--mt);margin-top:6px;text-transform:uppercase;letter-spacing:1.5px;">Stufe</div></div>
+</div>
+<sc-if value="{{ cur.hasEq }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-shrink:0;">
+<sc-if value="{{ cur.eq1 }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;padding:5px 12px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">{{ cur.eq1 }}</span></sc-if>
+<sc-if value="{{ cur.eq2 }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;padding:5px 12px;border:1px solid #E8734A;color:#E8734A;border-radius:8px;font-weight:600;">{{ cur.eq2 }}</span></sc-if>
+</div>
+</sc-if>
+<p style="font-size:15px;color:var(--st);margin:0 0 20px;line-height:1.5;text-align:center;flex-shrink:0;">{{ cur.text }}</p>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;">
+<div onClick="{{ playPause }}" style="position:relative;width:200px;height:200px;cursor:pointer;">
+<svg width="200" height="200" viewBox="0 0 200 200">
+<circle cx="100" cy="100" r="90" fill="none" stroke="var(--bd)" stroke-width="5"></circle>
+<circle cx="100" cy="100" r="90" fill="none" stroke="#E8734A" stroke-width="5" stroke-dasharray="565" stroke-dashoffset="{{ dashOff }}" stroke-linecap="round" transform="rotate(-90 100 100)"></circle>
+</svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+<div style="font-size:48px;font-weight:700;color:#E8734A;font-variant-numeric:tabular-nums;">{{ timerText }}</div>
+<div style="font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;">{{ timerHint }}</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+<!-- Manual step -->
+<sc-if value="{{ cur.manual }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 0;">
+<div style="width:64px;height:64px;background:var(--sf);border:1px solid var(--bd);border-radius:32px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+<span style="font-size:28px;">✋</span>
+</div>
+<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--st);margin-bottom:16px;">Manueller Schritt</span>
+<p style="font-size:20px;color:var(--tx);margin:0;line-height:1.5;text-align:center;max-width:320px;">{{ cur.text }}</p>
+</div>
+</sc-if>
+<!-- Nav buttons -->
+<div style="display:flex;gap:12px;flex-shrink:0;margin-top:16px;">
+<sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ prev }}" style="flex:1;background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;text-align:center;cursor:pointer;">
+<span style="font-size:16px;font-weight:600;color:var(--st);">← Zurück</span>
+</div>
+</sc-if>
+<sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ next }}" style="flex:2;background:#E8734A;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#D4623C">
+<span style="font-size:16px;font-weight:600;color:#fff;">Weiter →</span>
+</div>
+</sc-if>
+<sc-if value="{{ isLast }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ exitCook }}" style="flex:2;background:#E8734A;border-radius:14px;padding:16px;text-align:center;cursor:pointer;" style-hover="background:#D4623C">
+<span style="font-size:16px;font-weight:600;color:#fff;">Fertig ✓</span>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 430, &quot;height&quot;: 932 }
+}">
+class Component extends DCLogic {
+  state = { screen: 'detail', portions: 4, checked: {}, step: 0, timerOn: false, timerLeft: null, dark: true };
+  _iv = null;
+
+  _applyTheme(d) {
+    const s = document.documentElement.style;
+    s.setProperty('--bg', d ? '#111113' : '#F7F7F8');
+    s.setProperty('--cbg', d ? '#0A0A0A' : '#FFFFFF');
+    s.setProperty('--sf', d ? '#1A1A1C' : '#FFFFFF');
+    s.setProperty('--tx', d ? '#E8E8ED' : '#111113');
+    s.setProperty('--bt', d ? '#D0D0D5' : '#2A2A2E');
+    s.setProperty('--st', d ? '#8E8E93' : '#6E6E73');
+    s.setProperty('--mt', d ? '#6E6E73' : '#8E8E93');
+    s.setProperty('--bd', d ? '#2C2C2E' : '#E0E0E2');
+    s.setProperty('--bl', d ? '#3A3A3C' : '#C8C8CC');
+    s.setProperty('--bf', d ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)');
+    s.setProperty('--hb', d ? 'linear-gradient(135deg,#1E1E20,#141416)' : 'linear-gradient(135deg,#EAEAEC,#DDDDE0)');
+    s.setProperty('--nb', d ? 'rgba(28,28,30,.85)' : 'rgba(255,255,255,.9)');
+    s.setProperty('--mb', d ? '#161618' : '#F0F0F2');
+    s.setProperty('--gb', d ? 'linear-gradient(transparent,#111113 24px)' : 'linear-gradient(transparent,#F7F7F8 24px)');
+    document.body.style.background = d ? '#111113' : '#F7F7F8';
+  }
+
+  componentDidMount() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ember_cook') || '{}');
+      if (saved.portions) this.setState({ portions: saved.portions, checked: saved.checked || {}, dark: saved.dark !== false });
+    } catch(e) {}
+    this._applyTheme(this.state.dark);
+    this._iv = setInterval(() => {
+      const { timerOn, timerLeft } = this.state;
+      if (timerOn && timerLeft > 0) this.setState(s => ({ timerLeft: s.timerLeft - 1 }));
+      else if (timerOn && timerLeft !== null && timerLeft <= 0) this.setState({ timerOn: false });
+    }, 1000);
+  }
+
+  componentDidUpdate() {
+    this._applyTheme(this.state.dark);
+    try {
+      const { portions, checked, dark } = this.state;
+      localStorage.setItem('ember_cook', JSON.stringify({ portions, checked, dark }));
+    } catch(e) {}
+  }
+
+  componentWillUnmount() { clearInterval(this._iv); }
+
+  renderVals() {
+    const { screen, portions, checked, step, timerOn, timerLeft, dark } = this.state;
+    const sc = portions / 4;
+    const r = v => String(Math.round(v * sc));
+
+    const STEPS = [
+      { num: 1, machine: true, manual: false, text: 'Parmesan in den Mixtopf geben und zerkleinern.', zeit: '10 Sek', temp: '—', stufe: '10', sec: 10, hasEq: false, eq1: null, eq2: null },
+      { num: 2, machine: true, manual: false, text: 'Mandeln und Knoblauch dazugeben und zerkleinern.', zeit: '5 Sek', temp: '—', stufe: '6', sec: 5, hasEq: false, eq1: null, eq2: null },
+      { num: 3, machine: true, manual: false, text: 'Spinat, Olivenöl, Salz und Pfeffer dazugeben. Pesto verarbeiten und umfüllen.', zeit: '15 Sek', temp: '—', stufe: '8', sec: 15, hasEq: false, eq1: null, eq2: null },
+      { num: 4, machine: false, manual: true, text: 'Mixtopf spülen. Hähnchenbrust mit Salz und Pfeffer würzen und in den Varoma-Behälter einlegen.', zeit: null, temp: null, stufe: null, sec: 0, hasEq: false, eq1: null, eq2: null },
+      { num: 5, machine: true, manual: false, text: 'Wasser in den Mixtopf geben, Varoma aufsetzen und Hähnchen garen.', zeit: '20 Min', temp: 'Varoma', stufe: '1', sec: 1200, hasEq: true, eq1: '↺ Linkslauf', eq2: 'Varoma-Aufsatz' },
+      { num: 6, machine: false, manual: true, text: 'Tagliatelle in einem separaten Topf nach Packungsanleitung kochen.', zeit: null, temp: null, stufe: null, sec: 0, hasEq: false, eq1: null, eq2: null },
+      { num: 7, machine: true, manual: false, text: 'Sahne und Pesto in den Mixtopf geben und erwärmen.', zeit: '3 Min', temp: '90°C', stufe: '2', sec: 180, hasEq: false, eq1: null, eq2: null },
+      { num: 8, machine: false, manual: true, text: 'Hähnchen in Streifen schneiden. Tagliatelle mit Pesto-Sahne und Hähnchen anrichten.', zeit: null, temp: null, stufe: null, sec: 0, hasEq: false, eq1: null, eq2: null },
+    ];
+
+    const cur = STEPS[step] || STEPS[0];
+    const left = timerLeft != null ? timerLeft : (cur.sec || 0);
+    const mm = String(Math.floor(left / 60)).padStart(2, '0');
+    const ss = String(left % 60).padStart(2, '0');
+    const frac = cur.sec > 0 ? (timerLeft != null ? timerLeft / cur.sec : 1) : 1;
+    const dashOff = Math.round(565 * (1 - frac));
+    const timerHint = timerLeft === null ? 'Antippen zum Starten' : timerLeft <= 0 ? '✓ Fertig!' : timerOn ? 'Läuft — Antippen für Pause' : 'Pausiert — Antippen';
+
+    const ingData = [
+      ['Parmesan', 'in Stücken (3 cm)', r(80) + ' g'],
+      ['Mandeln', null, r(30) + ' g'],
+      ['Knoblauchzehen', null, r(2) + ' Stk'],
+      ['Frischer Spinat', null, r(100) + ' g'],
+      ['Olivenöl', null, r(50) + ' g'],
+      ['Salz', null, '1½ TL'],
+      ['Pfeffer', null, '½ TL'],
+      ['Hähnchenbrust', 'in Streifen', r(400) + ' g'],
+      ['Wasser', null, r(500) + ' g'],
+      ['Tagliatelle', null, r(500) + ' g'],
+      ['Sahne', null, r(200) + ' g'],
+    ];
+
+    const ingredients = ingData.map(([name, sub, amount], i) => ({
+      name, sub, amount,
+      on: !!checked[i], off: !checked[i],
+      tap: () => this.setState(s => ({ checked: { ...s.checked, [i]: !s.checked[i] } })),
+    }));
+
+    return {
+      isDetail: screen === 'detail', isCooking: screen === 'cooking',
+      isDark: dark, isLight: !dark,
+      portions,
+      inc: () => this.setState(s => ({ portions: Math.min(12, s.portions + 1) })),
+      dec: () => this.setState(s => ({ portions: Math.max(1, s.portions - 1) })),
+      toggleTheme: () => this.setState(s => ({ dark: !s.dark })),
+      ingredients, steps: STEPS,
+      startCook: () => this.setState({ screen: 'cooking', step: 0, timerLeft: null, timerOn: false }),
+      exitCook: () => this.setState({ screen: 'detail', timerOn: false }),
+      cur, stepLabel: 'Schritt ' + cur.num + ' / ' + STEPS.length,
+      timerText: mm + ':' + ss, timerOn, timerHint, dashOff,
+      hasPrev: step > 0, hasNext: step < STEPS.length - 1, isLast: step === STEPS.length - 1,
+      prev: () => { const p = Math.max(0, step - 1); this.setState({ step: p, timerLeft: null, timerOn: false }); },
+      next: () => { const n = Math.min(STEPS.length - 1, step + 1); this.setState({ step: n, timerLeft: null, timerOn: false }); },
+      playPause: () => {
+        if (cur.sec <= 0) return;
+        if (timerLeft === null) this.setState({ timerLeft: cur.sec, timerOn: true });
+        else if (timerLeft <= 0) this.setState({ timerLeft: cur.sec, timerOn: true });
+        else this.setState(s => ({ timerOn: !s.timerOn }));
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
