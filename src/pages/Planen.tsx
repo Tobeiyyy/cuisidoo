@@ -76,11 +76,169 @@ function SearchIcon() {
   );
 }
 
+interface EntryMenuState { id: number; servings: number; mode: "menu" | "servings" }
+
+function EntryCard({
+  entry, entryMenu, onNavigate, onOpenMenu, onCloseMenu, onSetEntryMenu, onRemove, onSaveServings,
+}: {
+  entry: PlanEntry;
+  entryMenu: EntryMenuState | null;
+  onNavigate: (recipeId: number) => void;
+  onOpenMenu: (entry: PlanEntry) => void;
+  onCloseMenu: () => void;
+  onSetEntryMenu: (next: EntryMenuState) => void;
+  onRemove: (id: number) => void;
+  onSaveServings: () => void;
+}) {
+  return (
+    <div
+      className="card"
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, cursor: "pointer", position: "relative" }}
+      onClick={() => onNavigate(entry.recipe_id)}
+    >
+      <div
+        style={{
+          width: 52, height: 52, flexShrink: 0, borderRadius: "var(--r-sm)",
+          background: gradientFor(entry.recipe_id), display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        <span style={{ fontSize: 18, fontWeight: 700, color: "var(--tx4)" }}>{entry.title.charAt(0)}</span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {entry.title}
+        </div>
+        <span className="chip">×{entry.servings}</span>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onOpenMenu(entry); }}
+        aria-label="Optionen"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 6, flexShrink: 0 }}
+      >
+        <MoreIcon />
+      </button>
+
+      {entryMenu?.id === entry.id && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 40 }}
+            onClick={(e) => { e.stopPropagation(); onCloseMenu(); }}
+          />
+          <div
+            className="card"
+            style={{ position: "absolute", top: 44, right: 8, minWidth: 180, padding: 8, zIndex: 41 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {entryMenu.mode === "menu" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSetEntryMenu({ ...entryMenu, mode: "servings" })}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", color: "var(--tx)", fontSize: 14, cursor: "pointer" }}
+                >
+                  Portionen ändern
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemove(entry.id)}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", color: "var(--accent)", fontSize: 14, cursor: "pointer" }}
+                >
+                  Entfernen
+                </button>
+              </>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => onSetEntryMenu({ ...entryMenu, servings: Math.max(1, entryMenu.servings - 1) })}
+                  aria-label="Weniger Portionen"
+                  style={{ width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none", borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer" }}
+                >
+                  −
+                </button>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--tx)", minWidth: 20, textAlign: "center" }}>{entryMenu.servings}</span>
+                <button
+                  type="button"
+                  onClick={() => onSetEntryMenu({ ...entryMenu, servings: entryMenu.servings + 1 })}
+                  aria-label="Mehr Portionen"
+                  style={{ width: 30, height: 30, background: "var(--accent)", border: "none", borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer" }}
+                >
+                  +
+                </button>
+                <button type="button" onClick={onSaveServings} className="btn-accent" style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}>
+                  Fertig
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SlotRow({
+  date, slot, entries, allowAdd, entryMenu, onNavigate, onOpenMenu, onCloseMenu, onSetEntryMenu, onRemove, onSaveServings, onOpenPicker,
+}: {
+  date: string;
+  slot: Slot;
+  entries: PlanEntry[];
+  allowAdd: boolean;
+  entryMenu: EntryMenuState | null;
+  onNavigate: (recipeId: number) => void;
+  onOpenMenu: (entry: PlanEntry) => void;
+  onCloseMenu: () => void;
+  onSetEntryMenu: (next: EntryMenuState) => void;
+  onRemove: (id: number) => void;
+  onSaveServings: () => void;
+  onOpenPicker: (date: string, slot: Slot) => void;
+}) {
+  if (entries.length === 0 && !allowAdd) return null;
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: "var(--tx4)", marginBottom: 6 }}>
+        {SLOT_LABELS[slot]}
+      </div>
+      {entries.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {entries.map((entry) => (
+            <EntryCard
+              key={entry.id}
+              entry={entry}
+              entryMenu={entryMenu}
+              onNavigate={onNavigate}
+              onOpenMenu={onOpenMenu}
+              onCloseMenu={onCloseMenu}
+              onSetEntryMenu={onSetEntryMenu}
+              onRemove={onRemove}
+              onSaveServings={onSaveServings}
+            />
+          ))}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onOpenPicker(date, slot)}
+          style={{
+            width: "100%", border: "1px dashed var(--border)", borderRadius: "var(--r-lg)",
+            padding: 18, background: "none", color: "var(--tx4)", fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          }}
+        >
+          <PlusIcon /> Rezept
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Planen() {
   const navigate = useNavigate();
+  const onNavigate = (recipeId: number) => navigate(`/rezept/${recipeId}`);
   const queryClient = useQueryClient();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [entryMenu, setEntryMenu] = useState<{ id: number; servings: number; mode: "menu" | "servings" } | null>(null);
+  const [entryMenu, setEntryMenu] = useState<EntryMenuState | null>(null);
   const [pickerTarget, setPickerTarget] = useState<{ date: string; slot: Slot } | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerSelected, setPickerSelected] = useState<RecipeListItem | null>(null);
@@ -178,123 +336,6 @@ export default function Planen() {
     return (recipesQuery.data ?? []).filter((r) => !q || r.title.toLowerCase().includes(q)).slice(0, 30);
   }, [recipesQuery.data, pickerQuery]);
 
-  function EntryCard({ entry }: { entry: PlanEntry }) {
-    return (
-      <div
-        className="card"
-        style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, cursor: "pointer", position: "relative" }}
-        onClick={() => navigate(`/rezept/${entry.recipe_id}`)}
-      >
-        <div
-          style={{
-            width: 52, height: 52, flexShrink: 0, borderRadius: "var(--r-sm)",
-            background: gradientFor(entry.recipe_id), display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--tx4)" }}>{entry.title.charAt(0)}</span>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {entry.title}
-          </div>
-          <span className="chip">×{entry.servings}</span>
-        </div>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); openEntryMenu(entry); }}
-          aria-label="Optionen"
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 6, flexShrink: 0 }}
-        >
-          <MoreIcon />
-        </button>
-
-        {entryMenu?.id === entry.id && (
-          <>
-            <div
-              style={{ position: "fixed", inset: 0, zIndex: 40 }}
-              onClick={(e) => { e.stopPropagation(); closeEntryMenu(); }}
-            />
-            <div
-              className="card"
-              style={{ position: "absolute", top: 44, right: 8, minWidth: 180, padding: 8, zIndex: 41 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {entryMenu.mode === "menu" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setEntryMenu({ ...entryMenu, mode: "servings" })}
-                    style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", color: "var(--tx)", fontSize: 14, cursor: "pointer" }}
-                  >
-                    Portionen ändern
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeEntry(entry.id)}
-                    style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", color: "var(--accent)", fontSize: 14, cursor: "pointer" }}
-                  >
-                    Entfernen
-                  </button>
-                </>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", gap: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => setEntryMenu({ ...entryMenu, servings: Math.max(1, entryMenu.servings - 1) })}
-                    aria-label="Weniger Portionen"
-                    style={{ width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none", borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer" }}
-                  >
-                    −
-                  </button>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "var(--tx)", minWidth: 20, textAlign: "center" }}>{entryMenu.servings}</span>
-                  <button
-                    type="button"
-                    onClick={() => setEntryMenu({ ...entryMenu, servings: entryMenu.servings + 1 })}
-                    aria-label="Mehr Portionen"
-                    style={{ width: 30, height: 30, background: "var(--accent)", border: "none", borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer" }}
-                  >
-                    +
-                  </button>
-                  <button type="button" onClick={saveServings} className="btn-accent" style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}>
-                    Fertig
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  function SlotRow({ date, slot, entries, allowAdd }: { date: string; slot: Slot; entries: PlanEntry[]; allowAdd: boolean }) {
-    if (entries.length === 0 && !allowAdd) return null;
-    return (
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: "var(--tx4)", marginBottom: 6 }}>
-          {SLOT_LABELS[slot]}
-        </div>
-        {entries.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {entries.map((entry) => <EntryCard key={entry.id} entry={entry} />)}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => openPicker(date, slot)}
-            style={{
-              width: "100%", border: "1px dashed var(--border)", borderRadius: "var(--r-lg)",
-              padding: 18, background: "none", color: "var(--tx4)", fontSize: 13, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
-          >
-            <PlusIcon /> Rezept
-          </button>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="page">
       <div className="page-header">
@@ -324,9 +365,21 @@ export default function Planen() {
               <span style={{ fontSize: 15, fontWeight: 700, color: "var(--tx)" }}>{dayHeaderLabel(iso, date)}</span>
               <span style={{ fontSize: 12, color: "var(--tx4)" }}>{formatDayLabel(date)}</span>
             </div>
-            <SlotRow date={iso} slot="mittag" entries={mittag} allowAdd />
-            <SlotRow date={iso} slot="abend" entries={abend} allowAdd />
-            <SlotRow date={iso} slot="sonstiges" entries={sonstiges} allowAdd={false} />
+            <SlotRow
+              date={iso} slot="mittag" entries={mittag} allowAdd
+              entryMenu={entryMenu} onNavigate={onNavigate} onOpenMenu={openEntryMenu} onCloseMenu={closeEntryMenu}
+              onSetEntryMenu={setEntryMenu} onRemove={removeEntry} onSaveServings={saveServings} onOpenPicker={openPicker}
+            />
+            <SlotRow
+              date={iso} slot="abend" entries={abend} allowAdd
+              entryMenu={entryMenu} onNavigate={onNavigate} onOpenMenu={openEntryMenu} onCloseMenu={closeEntryMenu}
+              onSetEntryMenu={setEntryMenu} onRemove={removeEntry} onSaveServings={saveServings} onOpenPicker={openPicker}
+            />
+            <SlotRow
+              date={iso} slot="sonstiges" entries={sonstiges} allowAdd={false}
+              entryMenu={entryMenu} onNavigate={onNavigate} onOpenMenu={openEntryMenu} onCloseMenu={closeEntryMenu}
+              onSetEntryMenu={setEntryMenu} onRemove={removeEntry} onSaveServings={saveServings} onOpenPicker={openPicker}
+            />
           </div>
         );
       })}
