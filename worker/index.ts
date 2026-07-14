@@ -4,6 +4,7 @@ import { ingredientRoutes } from "./ingredients";
 import { recipeRoutes } from "./recipes";
 import { generateRoutes } from "./generate";
 import { pantryRoutes, settingsRoutes, equipmentRoutes } from "./settings";
+import { planRoutes } from "./plan";
 
 export type Env = {
   DB: D1Database;
@@ -37,5 +38,6 @@ app.route("/api/generate", generateRoutes);
 app.route("/api/pantry", pantryRoutes);
 app.route("/api/settings", settingsRoutes);
 app.route("/api/equipment", equipmentRoutes);
+app.route("/api/plan", planRoutes);
 
 export default app;
