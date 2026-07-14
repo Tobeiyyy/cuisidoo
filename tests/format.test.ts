@@ -80,10 +80,13 @@ describe("weekRangeLabel", () => {
 });
 
 describe("formatQuantity", () => {
-  it("renders half pieces as fractions", async () => {
+  it("renders quarter pieces as fractions", async () => {
     const { formatQuantity } = await import("../src/format");
+    expect(formatQuantity(0.25, "Stück")).toBe("¼");
     expect(formatQuantity(0.5, "Stück")).toBe("½");
+    expect(formatQuantity(0.75, "Stück")).toBe("¾");
     expect(formatQuantity(1.5, "Stück")).toBe("1 ½");
+    expect(formatQuantity(1.75, "Stück")).toBe("1 ¾");
     expect(formatQuantity(2, "Stück")).toBe("2");
   });
   it("renders plain numbers for other units", async () => {

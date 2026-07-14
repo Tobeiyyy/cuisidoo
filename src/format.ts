@@ -65,15 +65,17 @@ export function weekRangeLabel(monday: Date): string {
   return `${monday.getDate()}. ${MONTHS_SHORT[monday.getMonth()]}${yearSuffix} – ${sunday.getDate()}. ${MONTHS_SHORT[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
+const PIECE_FRACTIONS: Record<string, string> = { "0.25": "¼", "0.5": "½", "0.75": "¾" };
+
 /**
- * Quantity display with half-piece fractions for Stück ("½", "1 ½", "2 ½");
+ * Quantity display with quarter-piece fractions for Stück ("¼", "½", "1 ¾", …);
  * other units render plain numbers with up to 2 decimals trimmed.
  */
 export function formatQuantity(q: number, unit: string): string {
   if (unit === "Stück") {
     const whole = Math.floor(q);
-    const isHalf = Math.abs(q - whole - 0.5) < 1e-9;
-    if (isHalf) return whole === 0 ? "½" : `${whole} ½`;
+    const frac = PIECE_FRACTIONS[String(Math.round((q - whole) * 100) / 100)];
+    if (frac) return whole === 0 ? frac : `${whole} ${frac}`;
   }
   return Number.isInteger(q) ? String(q) : String(Math.round(q * 100) / 100);
 }

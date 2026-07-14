@@ -1,7 +1,7 @@
 import { isInformalUnit, type Scaling } from "./types";
 
 export function roundQuantity(q: number, unit: string): number {
-  if (unit === "Stück") return Math.round(q * 2) / 2;   // halves of a piece
+  if (unit === "Stück") return Math.round(q * 4) / 4;   // quarter-piece precision
   if (unit === "g" || unit === "ml") {
     return q >= 100 ? Math.round(q / 5) * 5 : Math.round(q);
   }
@@ -11,6 +11,6 @@ export function roundQuantity(q: number, unit: string): number {
 export function scaleQuantity(quantity: number, scaling: Scaling, factor: number, unit: string): number {
   if (isInformalUnit(unit) || scaling === "fixed" || factor === 1) return quantity;
   const raw = scaling === "damped" ? quantity * Math.pow(factor, 0.6) : quantity * factor;
-  if (unit === "Stück") return Math.max(0.5, Math.round(raw * 2) / 2); // half-piece precision
+  if (unit === "Stück") return Math.max(0.25, Math.round(raw * 4) / 4); // quarter-piece precision
   return roundQuantity(raw, unit);
 }
