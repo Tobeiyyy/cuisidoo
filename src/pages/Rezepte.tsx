@@ -147,7 +147,7 @@ export default function Rezepte() {
       <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 2 }}>
         <button
           className={`tag-pill${filter.kind === "all" ? " active" : ""}`}
-          style={{ border: "none", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
           onClick={() => setFilter({ kind: "all" })}
         >
           Alle
@@ -156,7 +156,7 @@ export default function Rezepte() {
           <button
             key={tag}
             className={`tag-pill${filter.kind === "tag" && filter.tag === tag ? " active" : ""}`}
-            style={{ border: filter.kind === "tag" && filter.tag === tag ? "none" : undefined, cursor: "pointer" }}
+            style={{ cursor: "pointer" }}
             onClick={() => setFilter({ kind: "tag", tag })}
           >
             {tag}
@@ -164,14 +164,14 @@ export default function Rezepte() {
         ))}
         <button
           className={`tag-pill${filter.kind === "favorite" ? " active" : ""}`}
-          style={{ border: "none", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
           onClick={() => setFilter({ kind: "favorite" })}
         >
           Favoriten
         </button>
         <button
           className={`tag-pill${filter.kind === "cookable" ? " active" : ""}`}
-          style={{ border: "none", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
           onClick={() => setFilter({ kind: "cookable" })}
         >
           Kochbar
