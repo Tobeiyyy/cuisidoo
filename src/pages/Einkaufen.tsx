@@ -1,17 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, toggleItem } from "../api";
+import { api, toggleItem, type ShoppingItem } from "../api";
+import { getMirroredShoppingList, mirrorShoppingList } from "../offline";
 import { isInformalUnit } from "../../shared/types";
 
-interface ShoppingItem {
-  id: number;
-  ingredient_id: number | null;
-  label: string;
-  quantity: number | null;
-  unit: string | null;
-  category: string;
-  checked: boolean;
-  source: "plan" | "manual";
+/** Task 17: the list query returns the items plus whether they came from the offline mirror. */
+interface ShoppingData {
+  items: ShoppingItem[];
+  offline: boolean;
 }
 
 const CATEGORIES = [
@@ -73,9 +69,20 @@ export default function Einkaufen() {
 
   const shoppingQuery = useQuery({
     queryKey: ["shopping"],
-    queryFn: () => api<ShoppingItem[]>("/api/shopping"),
+    queryFn: async (): Promise<ShoppingData> => {
+      try {
+        const items = await api<ShoppingItem[]>("/api/shopping");
+        void mirrorShoppingList(items);
+        return { items, offline: false };
+      } catch (err) {
+        const mirrored = await getMirroredShoppingList();
+        if (mirrored.length > 0) return { items: mirrored, offline: true };
+        throw err;
+      }
+    },
   });
-  const items = shoppingQuery.data ?? [];
+  const items = shoppingQuery.data?.items ?? [];
+  const isOffline = shoppingQuery.data?.offline ?? false;
 
   const grouped = useMemo(() => {
     const map = new Map<string, ShoppingItem[]>();
@@ -92,8 +99,8 @@ export default function Einkaufen() {
 
   async function handleToggle(item: ShoppingItem) {
     const next = !item.checked;
-    queryClient.setQueryData<ShoppingItem[]>(["shopping"], (old) =>
-      old?.map((i) => (i.id === item.id ? { ...i, checked: next } : i)));
+    queryClient.setQueryData<ShoppingData>(["shopping"], (old) =>
+      old && { ...old, items: old.items.map((i) => (i.id === item.id ? { ...i, checked: next } : i)) });
     try {
       await toggleItem(item.id, next);
     } catch {
@@ -102,7 +109,8 @@ export default function Einkaufen() {
   }
 
   async function handleDelete(id: number) {
-    queryClient.setQueryData<ShoppingItem[]>(["shopping"], (old) => old?.filter((i) => i.id !== id));
+    queryClient.setQueryData<ShoppingData>(["shopping"], (old) =>
+      old && { ...old, items: old.items.filter((i) => i.id !== id) });
     try {
       await api(`/api/shopping/${id}`, { method: "DELETE" });
     } finally {
@@ -141,6 +149,7 @@ export default function Einkaufen() {
     <div className="page">
       <div className="page-header">
         <h1>Einkaufsliste</h1>
+        {isOffline && <span className="chip">Offline</span>}
       </div>
 
       {totalCount > 0 && (

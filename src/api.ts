@@ -1,7 +1,23 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { NutritionScore, Recipe } from "../shared/types";
+import { getMirroredRecipe, mirrorRecipe, queueCheck } from "./offline";
 
 export class UnauthorizedError extends Error {}
+
+/** Shape of a shopping-list row, shared between Einkaufen.tsx and the offline mirror (Task 17). */
+export interface ShoppingItem {
+  id: number;
+  ingredient_id: number | null;
+  label: string;
+  quantity: number | null;
+  unit: string | null;
+  category: string;
+  checked: boolean;
+  source: "plan" | "manual";
+}
+
+/** A recipe as returned to pages, with an extra marker set when served from the offline mirror. */
+export type RecipeWithOfflineFlag = Recipe & { offline?: boolean };
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -13,24 +29,48 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Fetches a single full recipe by id. Reused by cooking mode (Task 16). */
+/**
+ * Fetches a single full recipe by id. Reused by cooking mode (Task 16). On success the recipe is
+ * mirrored to IndexedDB (Task 17); on fetch failure it falls back to the mirrored copy (if any)
+ * with `offline: true` set so RezeptDetail/Kochmodus can show a small badge. Signature and
+ * queryKey are unchanged so existing callers don't need to change beyond reading `.offline`.
+ */
 export function useRecipe(id: string | undefined) {
   return useQuery({
     queryKey: ["recipe", id],
-    queryFn: () => api<Recipe>(`/api/recipes/${id}`),
+    queryFn: async (): Promise<RecipeWithOfflineFlag> => {
+      try {
+        const recipe = await api<Recipe>(`/api/recipes/${id}`);
+        void mirrorRecipe(recipe);
+        return recipe;
+      } catch (err) {
+        const mirrored = id ? await getMirroredRecipe(Number(id)) : null;
+        if (mirrored) return { ...mirrored, offline: true };
+        throw err;
+      }
+    },
     enabled: !!id,
   });
 }
 
 /**
- * Sets a shopping-list item's checked state. Single call-site for the mutation so Task 17 can
- * slot an offline outbox in here later without touching Einkaufen.tsx.
+ * Sets a shopping-list item's checked state. Single call-site for the mutation, which is why
+ * Task 17's offline outbox slots in here without touching Einkaufen.tsx's call site: offline (or
+ * on a failed PATCH) the change is queued in IndexedDB and replayed once connectivity returns.
  */
 export async function toggleItem(id: number, checked: boolean): Promise<void> {
-  await api(`/api/shopping/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ checked }),
-  });
+  if (!navigator.onLine) {
+    await queueCheck(id, checked);
+    return;
+  }
+  try {
+    await api(`/api/shopping/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ checked }),
+    });
+  } catch {
+    await queueCheck(id, checked);
+  }
 }
 
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */

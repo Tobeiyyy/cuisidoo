@@ -242,9 +242,12 @@ export default function Kochmodus() {
     >
       {/* Header: step counter + segment progress + exit */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>
-          Schritt {stepIndex + 1} / {steps.length}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>
+            Schritt {stepIndex + 1} / {steps.length}
+          </span>
+          {recipe.offline && <span className="chip">Offline</span>}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ display: "flex", gap: 5 }}>
             {steps.map((_, i) => (

@@ -187,6 +187,7 @@ export default function RezeptDetail() {
           {recipe.total_time_min != null && <span>{recipe.total_time_min} Min</span>}
           <span>·</span>
           <span>{portions} Portionen</span>
+          {recipe.offline && <span className="chip">Offline</span>}
         </div>
 
         {/* Portion stepper */}
