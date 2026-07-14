@@ -315,7 +315,7 @@ export default function RezeptDetail() {
           </div>
         )}
 
-        <Link to={`/rezept/${recipe.id}/kochen`} className="btn-accent" style={{ textDecoration: "none" }}>
+        <Link to={`/rezept/${recipe.id}/kochen?portionen=${portions}`} className="btn-accent" style={{ textDecoration: "none" }}>
           Kochen starten
         </Link>
       </div>

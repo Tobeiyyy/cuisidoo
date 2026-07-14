@@ -195,6 +195,19 @@
   margin-bottom: 2px;
 }
 
+@keyframes cook-ring-flash {
+  0%,
+  100% {
+    stroke: var(--accent);
+  }
+  50% {
+    stroke: #ffffff;
+  }
+}
+.cook-ring-flash {
+  animation: cook-ring-flash 0.6s ease-in-out;
+}
+
 .spinner {
   display: inline-block;
   width: 16px;
