@@ -1,6 +1,12 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { NutritionScore, Recipe } from "../shared/types";
-import { getMirroredRecipe, mirrorRecipe, queueCheck } from "./offline";
+import {
+  getMirroredRecipe,
+  mirrorRecipe,
+  queueCheck,
+  removePendingChecks,
+  updateMirroredShoppingItem,
+} from "./offline";
 
 export class UnauthorizedError extends Error {}
 
@@ -41,9 +47,10 @@ export function useRecipe(id: string | undefined) {
     queryFn: async (): Promise<RecipeWithOfflineFlag> => {
       try {
         const recipe = await api<Recipe>(`/api/recipes/${id}`);
-        void mirrorRecipe(recipe);
+        void mirrorRecipe(recipe).catch(() => {});
         return recipe;
       } catch (err) {
+        if (err instanceof UnauthorizedError) throw err;
         const mirrored = id ? await getMirroredRecipe(Number(id)) : null;
         if (mirrored) return { ...mirrored, offline: true };
         throw err;
@@ -59,6 +66,10 @@ export function useRecipe(id: string | undefined) {
  * on a failed PATCH) the change is queued in IndexedDB and replayed once connectivity returns.
  */
 export async function toggleItem(id: number, checked: boolean): Promise<void> {
+  // A newer toggle always supersedes any older queued-but-not-yet-flushed PATCH for the same
+  // item, so drop it first — otherwise a stale outbox entry could replay after this one and
+  // clobber the server with the older value.
+  await removePendingChecks(id);
   if (!navigator.onLine) {
     await queueCheck(id, checked);
     return;
@@ -68,6 +79,7 @@ export async function toggleItem(id: number, checked: boolean): Promise<void> {
       method: "PATCH",
       body: JSON.stringify({ checked }),
     });
+    void updateMirroredShoppingItem(id, checked).catch(() => {});
   } catch {
     await queueCheck(id, checked);
   }

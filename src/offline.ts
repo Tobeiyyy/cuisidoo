@@ -75,36 +75,65 @@ export async function getMirroredShoppingList(): Promise<ShoppingItem[]> {
 export async function queueCheck(id: number, checked: boolean): Promise<void> {
   const db = await getDb();
   await db.add("outbox", { id, checked });
-  const items = await getMirroredShoppingList();
-  if (items.length > 0) {
-    await mirrorShoppingList(items.map((i) => (i.id === id ? { ...i, checked } : i)));
-  }
+  await updateMirroredShoppingItem(id, checked);
 }
+
+/**
+ * Deletes all outbox entries queued for a given shopping-item id. Used before queuing/sending a
+ * newer toggle so a stale queued PATCH from an earlier (now superseded) toggle can't replay after
+ * it — a newer user action always supersedes an older queued one for the same item.
+ */
+export async function removePendingChecks(id: number): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction("outbox", "readwrite");
+  let cursor = await tx.store.openCursor();
+  while (cursor) {
+    if (cursor.value.id === id) await cursor.delete();
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+}
+
+/** Updates a single item's checked state in the mirrored shopping list. No-op if there's no mirror. */
+export async function updateMirroredShoppingItem(id: number, checked: boolean): Promise<void> {
+  const items = await getMirroredShoppingList();
+  if (items.length === 0) return;
+  await mirrorShoppingList(items.map((i) => (i.id === id ? { ...i, checked } : i)));
+}
+
+let flushing = false;
 
 /**
  * Replays queued PATCHes in FIFO order, deleting each as it succeeds. Stops at the first failure
  * (offline again, or server error) and leaves the rest queued for the next flush attempt.
+ * Guarded against re-entrant calls (e.g. mount + "online" event firing close together).
  */
 export async function flushOutbox(): Promise<void> {
-  const db = await getDb();
-  const pending: { key: number; value: OutboxEntry }[] = [];
-  let cursor = await db.transaction("outbox").store.openCursor();
-  while (cursor) {
-    pending.push({ key: cursor.key, value: cursor.value });
-    cursor = await cursor.continue();
-  }
-
-  for (const { key, value } of pending) {
-    try {
-      const res = await fetch(`/api/shopping/${value.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ checked: value.checked }),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      await db.delete("outbox", key);
-    } catch {
-      break;
+  if (flushing) return;
+  flushing = true;
+  try {
+    const db = await getDb();
+    const pending: { key: number; value: OutboxEntry }[] = [];
+    let cursor = await db.transaction("outbox").store.openCursor();
+    while (cursor) {
+      pending.push({ key: cursor.key, value: cursor.value });
+      cursor = await cursor.continue();
     }
+
+    for (const { key, value } of pending) {
+      try {
+        const res = await fetch(`/api/shopping/${value.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ checked: value.checked }),
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        await db.delete("outbox", key);
+      } catch {
+        break;
+      }
+    }
+  } finally {
+    flushing = false;
   }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, toggleItem, type ShoppingItem } from "../api";
+import { api, toggleItem, UnauthorizedError, type ShoppingItem } from "../api";
 import { getMirroredShoppingList, mirrorShoppingList } from "../offline";
 import { isInformalUnit } from "../../shared/types";
 
@@ -72,9 +72,10 @@ export default function Einkaufen() {
     queryFn: async (): Promise<ShoppingData> => {
       try {
         const items = await api<ShoppingItem[]>("/api/shopping");
-        void mirrorShoppingList(items);
+        void mirrorShoppingList(items).catch(() => {});
         return { items, offline: false };
       } catch (err) {
+        if (err instanceof UnauthorizedError) throw err;
         const mirrored = await getMirroredShoppingList();
         if (mirrored.length > 0) return { items: mirrored, offline: true };
         throw err;
