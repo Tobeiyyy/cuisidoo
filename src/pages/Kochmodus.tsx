@@ -56,6 +56,7 @@ export default function Kochmodus() {
 
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const steps = recipe?.steps ?? [];
   const step: RecipeStep | undefined = steps[stepIndex];
@@ -157,14 +158,18 @@ export default function Kochmodus() {
 
   function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   }
   function handleTouchEnd(e: TouchEvent<HTMLDivElement>) {
-    if (touchStartX.current == null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (touchStartX.current == null || touchStartY.current == null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     touchStartX.current = null;
-    if (Math.abs(delta) <= SWIPE_THRESHOLD) return;
-    if (delta < 0) goNext();
-    else goPrev();
+    touchStartY.current = null;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) goNext();
+      else goPrev();
+    }
   }
 
   function toggleRing() {
@@ -227,7 +232,7 @@ export default function Kochmodus() {
   }
 
   const isTm6 = step.kind === "tm6";
-  const hasTimer = isTm6 && step.seconds != null && remaining != null;
+  const hasTimer = step.seconds != null && remaining != null;
 
   return (
     <div
