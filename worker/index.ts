@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { authMiddleware, setAuthCookie } from "./auth";
 import { ingredientRoutes } from "./ingredients";
 import { recipeRoutes } from "./recipes";
+import { generateRoutes } from "./generate";
 import { qAll } from "./db";
 
 export type Env = {
@@ -35,5 +36,6 @@ app.get("/api/equipment", async (c) =>
 
 app.route("/api/ingredients", ingredientRoutes);
 app.route("/api/recipes", recipeRoutes);
+app.route("/api/generate", generateRoutes);
 
 export default app;
