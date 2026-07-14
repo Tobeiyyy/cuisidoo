@@ -64,3 +64,16 @@ export function weekRangeLabel(monday: Date): string {
   const yearSuffix = monday.getFullYear() === sunday.getFullYear() ? "" : ` ${monday.getFullYear()}`;
   return `${monday.getDate()}. ${MONTHS_SHORT[monday.getMonth()]}${yearSuffix} – ${sunday.getDate()}. ${MONTHS_SHORT[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
+
+/**
+ * Quantity display with half-piece fractions for Stück ("½", "1 ½", "2 ½");
+ * other units render plain numbers with up to 2 decimals trimmed.
+ */
+export function formatQuantity(q: number, unit: string): string {
+  if (unit === "Stück") {
+    const whole = Math.floor(q);
+    const isHalf = Math.abs(q - whole - 0.5) < 1e-9;
+    if (isHalf) return whole === 0 ? "½" : `${whole} ½`;
+  }
+  return Number.isInteger(q) ? String(q) : String(Math.round(q * 100) / 100);
+}

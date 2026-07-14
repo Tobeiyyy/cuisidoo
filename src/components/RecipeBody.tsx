@@ -1,5 +1,5 @@
 import { scaleQuantity } from "../../shared/scaling";
-import { formatSeconds, formatTemp } from "../format";
+import { formatQuantity, formatSeconds, formatTemp } from "../format";
 import type { RecipeStep, Scaling } from "../../shared/types";
 
 /** Minimal ingredient shape needed for rendering — satisfied by both a saved
@@ -114,7 +114,7 @@ export default function RecipeBody({ ingredients, steps, servingsBase, portions 
               {showHint && <span style={{ display: "block", fontSize: 11, color: "var(--tx4)" }}>nach Geschmack</span>}
             </div>
             <div style={{ fontSize: 15, color: "var(--accent)", whiteSpace: "nowrap", marginLeft: 16, fontWeight: 500 }}>
-              {scaled} {ing.unit}
+              {formatQuantity(scaled, ing.unit)} {ing.unit}
             </div>
           </div>
         );

@@ -11,6 +11,6 @@ export function roundQuantity(q: number, unit: string): number {
 export function scaleQuantity(quantity: number, scaling: Scaling, factor: number, unit: string): number {
   if (isInformalUnit(unit) || scaling === "fixed" || factor === 1) return quantity;
   const raw = scaling === "damped" ? quantity * Math.pow(factor, 0.6) : quantity * factor;
-  if (unit === "Stück") return Math.max(1, Math.round(raw)); // whole pieces when scaling
+  if (unit === "Stück") return Math.max(0.5, Math.round(raw * 2) / 2); // half-piece precision
   return roundQuantity(raw, unit);
 }

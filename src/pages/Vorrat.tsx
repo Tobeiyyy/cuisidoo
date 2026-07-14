@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type { Ingredient, UnitDim } from "../../shared/types";
+import { formatQuantity } from "../format";
 
 interface PantryItem {
   ingredient_id: number;
@@ -251,7 +252,7 @@ export default function Vorrat() {
                       −
                     </button>
                     <span style={{ fontSize: 14, color: "var(--tx)", minWidth: 64, textAlign: "center" }}>
-                      {item.quantity} {unitLabel(item.unit_dim)}
+                      {formatQuantity(item.quantity, item.unit_dim === "count" ? "Stück" : "g")} {unitLabel(item.unit_dim)}
                     </span>
                     <button
                       type="button"

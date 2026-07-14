@@ -4,7 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, useRecipe } from "../api";
 import { scaleQuantity } from "../../shared/scaling";
-import { formatSeconds, formatTemp } from "../format";
+import { formatQuantity, formatSeconds, formatTemp } from "../format";
 import type { RecipeIngredient, RecipeStep } from "../../shared/types";
 
 const RING_R = 82;
@@ -382,7 +382,7 @@ export default function Kochmodus() {
                   >
                     <span style={{ color: "var(--tx2)" }}>{ing.name}</span>
                     <span style={{ color: "var(--accent)", fontWeight: 500 }}>
-                      {scaled} {ing.unit}
+                      {formatQuantity(scaled, ing.unit)} {ing.unit}
                     </span>
                   </div>
                 );

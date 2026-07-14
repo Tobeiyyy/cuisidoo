@@ -15,8 +15,11 @@ describe("scaleQuantity", () => {
   it("keeps informal units unchanged regardless of scaling", () => {
     expect(scaleQuantity(1, "linear", 4, "Prise")).toBe(1);
   });
-  it("rounds count to whole pieces", () => {
-    expect(scaleQuantity(1, "linear", 1.5, "Stück")).toBe(2);
+  it("scales count with half-piece precision", () => {
+    expect(scaleQuantity(1, "linear", 1.5, "Stück")).toBe(1.5);
+    expect(scaleQuantity(1, "linear", 2.5, "Stück")).toBe(2.5);
+    expect(scaleQuantity(2, "linear", 0.5, "Stück")).toBe(1);
+    expect(scaleQuantity(1, "linear", 0.4, "Stück")).toBe(0.5); // never below half a piece
   });
 });
 

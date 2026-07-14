@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, toggleItem, UnauthorizedError, type ShoppingItem } from "../api";
 import { getMirroredShoppingList, mirrorShoppingList } from "../offline";
 import { isInformalUnit } from "../../shared/types";
+import { formatQuantity } from "../format";
 
 /** Task 17: the list query returns the items plus whether they came from the offline mirror. */
 interface ShoppingData {
@@ -16,10 +17,6 @@ const CATEGORIES = [
 ];
 
 const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
-
-function formatQty(q: number): string {
-  return Number.isInteger(q) ? String(q) : String(Math.round(q * 100) / 100);
-}
 
 function PlusIcon() {
   return (
@@ -206,7 +203,7 @@ export default function Einkaufen() {
                   </span>
                   {showQty && (
                     <span style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
-                      {formatQty(item.quantity!)} {item.unit}
+                      {formatQuantity(item.quantity!, item.unit!)} {item.unit}
                     </span>
                   )}
                   <button

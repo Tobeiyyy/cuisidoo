@@ -78,3 +78,17 @@ describe("weekRangeLabel", () => {
     expect(weekRangeLabel(new Date(2026, 6, 27))).toBe("27. Jul – 2. Aug 2026");
   });
 });
+
+describe("formatQuantity", () => {
+  it("renders half pieces as fractions", async () => {
+    const { formatQuantity } = await import("../src/format");
+    expect(formatQuantity(0.5, "Stück")).toBe("½");
+    expect(formatQuantity(1.5, "Stück")).toBe("1 ½");
+    expect(formatQuantity(2, "Stück")).toBe("2");
+  });
+  it("renders plain numbers for other units", async () => {
+    const { formatQuantity } = await import("../src/format");
+    expect(formatQuantity(150, "g")).toBe("150");
+    expect(formatQuantity(2.5, "EL")).toBe("2.5");
+  });
+});
