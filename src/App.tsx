@@ -7,6 +7,8 @@ import Rezepte from "./pages/Rezepte";
 import RezeptDetail from "./pages/RezeptDetail";
 import RezeptForm from "./pages/RezeptForm";
 import Generieren from "./pages/Generieren";
+import Vorrat from "./pages/Vorrat";
+import Einstellungen from "./pages/Einstellungen";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -36,22 +38,6 @@ function EinkaufenPage() {
   );
 }
 
-function VorratPage() {
-  return (
-    <div className="page">
-      <h1>Vorrat</h1>
-    </div>
-  );
-}
-
-function EinstellungenPage() {
-  return (
-    <div className="page">
-      <h1>Einstellungen</h1>
-    </div>
-  );
-}
-
 function Shell() {
   return (
     <>
@@ -64,8 +50,8 @@ function Shell() {
         <Route path="/generieren" element={<Generieren />} />
         <Route path="/planen" element={<PlanenPage />} />
         <Route path="/einkaufen" element={<EinkaufenPage />} />
-        <Route path="/vorrat" element={<VorratPage />} />
-        <Route path="/einstellungen" element={<EinstellungenPage />} />
+        <Route path="/vorrat" element={<Vorrat />} />
+        <Route path="/einstellungen" element={<Einstellungen />} />
       </Routes>
       <Nav />
     </>

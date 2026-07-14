@@ -3,7 +3,7 @@ import { authMiddleware, setAuthCookie } from "./auth";
 import { ingredientRoutes } from "./ingredients";
 import { recipeRoutes } from "./recipes";
 import { generateRoutes } from "./generate";
-import { qAll } from "./db";
+import { pantryRoutes, settingsRoutes, equipmentRoutes } from "./settings";
 
 export type Env = {
   DB: D1Database;
@@ -31,11 +31,11 @@ app.post("/api/auth/login", async (c) => {
 
 app.get("/api/auth/check", (c) => c.json({ ok: true }));
 
-app.get("/api/equipment", async (c) =>
-  c.json(await qAll(c.env.DB.prepare("SELECT id, name, owned FROM equipment ORDER BY name"))));
-
 app.route("/api/ingredients", ingredientRoutes);
 app.route("/api/recipes", recipeRoutes);
 app.route("/api/generate", generateRoutes);
+app.route("/api/pantry", pantryRoutes);
+app.route("/api/settings", settingsRoutes);
+app.route("/api/equipment", equipmentRoutes);
 
 export default app;

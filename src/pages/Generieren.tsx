@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "../api";
 import RecipeBody from "../components/RecipeBody";
 import type { RecipeSaveInput } from "../../worker/recipes";
 
@@ -27,9 +28,20 @@ export default function Generieren() {
   const queryClient = useQueryClient();
 
   const [wunsch, setWunsch] = useState("");
-  // TODO Task 13: default_servings from settings; hardcoded to 2 until settings exist.
   const [portionen, setPortionen] = useState(2);
+  const [portionenTouched, setPortionenTouched] = useState(false);
   const [extraGeraeteErlaubt, setExtraGeraeteErlaubt] = useState(false);
+
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api<Record<string, string>>("/api/settings"),
+  });
+
+  useEffect(() => {
+    if (portionenTouched || !settingsQuery.data) return;
+    const fallback = Number(settingsQuery.data.default_servings);
+    if (fallback > 0) setPortionen(fallback);
+  }, [portionenTouched, settingsQuery.data]);
 
   const [phase, setPhase] = useState<Phase>("form");
   const [statusIndex, setStatusIndex] = useState(0);
@@ -136,7 +148,7 @@ export default function Generieren() {
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <button
                 type="button"
-                onClick={() => setPortionen((p) => Math.max(1, p - 1))}
+                onClick={() => { setPortionenTouched(true); setPortionen((p) => Math.max(1, p - 1)); }}
                 aria-label="Weniger Portionen"
                 style={{
                   width: 38,
@@ -156,7 +168,7 @@ export default function Generieren() {
               </span>
               <button
                 type="button"
-                onClick={() => setPortionen((p) => Math.min(24, p + 1))}
+                onClick={() => { setPortionenTouched(true); setPortionen((p) => Math.min(24, p + 1)); }}
                 aria-label="Mehr Portionen"
                 style={{
                   width: 38,
