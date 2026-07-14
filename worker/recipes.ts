@@ -50,8 +50,10 @@ export function validateRecipeInput(input: any): string | null {
   for (const step of input.steps) {
     if (!STEP_KINDS.includes(step?.kind)) return "Ungültige Schrittart.";
     if (typeof step.text !== "string" || !step.text.trim()) return "Jeder Schritt benötigt einen Text.";
-    if (step.kind === "off_device" && (typeof step.device !== "string" || !step.device.trim())) {
-      return "Externe Schritte benötigen ein Gerät.";
+    // off_device steps may have device: null — that means hand work ("Manuell"),
+    // e.g. schneiden or anrichten; only equipment-requiring steps name a device.
+    if (step.kind === "off_device" && step.device != null && (typeof step.device !== "string" || !step.device.trim())) {
+      return "Gerät eines externen Schritts muss ein Name oder null (von Hand) sein.";
     }
   }
 

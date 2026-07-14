@@ -705,7 +705,7 @@ export default function RezeptForm() {
                 value={row.device}
                 onChange={(e) => updateStep(row.key, { device: e.target.value })}
               >
-                <option value="">Gerät wählen</option>
+                <option value="">Von Hand (kein Gerät)</option>
                 {equipmentList.map((eq) => (
                   <option key={eq.id} value={eq.name}>
                     {eq.name}

@@ -169,7 +169,9 @@ export async function scoreHandler(c: Context<{ Bindings: Env }>) {
   try {
     const resp = await client.messages.create({
       model: settings.generation_model ?? "claude-sonnet-5",
-      max_tokens: 2000,
+      // adaptive thinking (default on current models) shares this budget with the
+      // JSON answer — 2000 truncated mid-JSON in live testing
+      max_tokens: 8000,
       system: buildNutritionPrompt(),
       messages: [{ role: "user", content: buildNutritionInput(recipe) }],
       output_config: {
