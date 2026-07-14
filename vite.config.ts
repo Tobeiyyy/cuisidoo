@@ -23,6 +23,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        globPatterns: ["**/*.{js,css,html,woff2,png,svg,webmanifest}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
       },
