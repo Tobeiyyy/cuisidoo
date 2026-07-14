@@ -9,6 +9,10 @@ export const generateRoutes = new Hono<{ Bindings: Env }>().post("/", async (c) 
     wunsch: string; portionen: number; extraGeraeteErlaubt?: boolean;
   }>();
 
+  if (typeof wunsch !== "string" || wunsch.trim().length === 0 || typeof portionen !== "number" || !Number.isFinite(portionen) || portionen < 1) {
+    return c.json({ error: "Ungültige Anfrage: wunsch (Text) und portionen (Zahl ≥ 1) erforderlich." }, 400);
+  }
+
   const db = c.env.DB;
   const equipmentOwned = (await qAll<{ name: string }>(
     db.prepare("SELECT name FROM equipment WHERE owned=1"))).map((e) => e.name);
@@ -32,23 +36,28 @@ export const generateRoutes = new Hono<{ Bindings: Env }>().post("/", async (c) 
   }];
 
   for (let attempt = 0; attempt < 6; attempt++) {
-    const resp = await client.messages.create({
-      model: settings.generation_model ?? "claude-sonnet-5",
-      max_tokens: 16000,
-      system, tools, messages,
-    });
-    const toolUse = resp.content.find(
-      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "save_recipe");
-    if (toolUse) return c.json(toolUse.input);   // RecipeSaveInput draft
+    try {
+      const resp = await client.messages.create({
+        model: settings.generation_model ?? "claude-sonnet-5",
+        max_tokens: 16000,
+        system, tools, messages,
+      });
+      const toolUse = resp.content.find(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "save_recipe");
+      if (toolUse) return c.json(toolUse.input);   // RecipeSaveInput draft
 
-    messages = [...messages, { role: "assistant", content: resp.content }];
-    if (resp.stop_reason === "pause_turn") continue;               // server tool resumes
-    if (resp.stop_reason === "refusal") return c.json({ error: "Anfrage abgelehnt" }, 422);
-    // end_turn without save_recipe → nudge once more
-    messages = [...messages, {
-      role: "user",
-      content: "Bitte gib das Rezept jetzt genau einmal über das Tool save_recipe aus.",
-    }];
+      messages = [...messages, { role: "assistant", content: resp.content }];
+      if (resp.stop_reason === "pause_turn") continue;               // server tool resumes
+      if (resp.stop_reason === "refusal") return c.json({ error: "Anfrage abgelehnt" }, 422);
+      // end_turn without save_recipe → nudge once more
+      messages = [...messages, {
+        role: "user",
+        content: "Bitte gib das Rezept jetzt genau einmal über das Tool save_recipe aus.",
+      }];
+    } catch (err) {
+      console.error("generate: Anthropic API error", err instanceof Error ? err.message : err);
+      return c.json({ error: "KI-Anfrage fehlgeschlagen. Bitte später erneut versuchen." }, 502);
+    }
   }
   return c.json({ error: "Generierung fehlgeschlagen (kein save_recipe)" }, 502);
 });
