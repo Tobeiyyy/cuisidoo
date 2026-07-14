@@ -5,6 +5,7 @@ import Nav from "./components/Nav";
 import Login from "./pages/Login";
 import Rezepte from "./pages/Rezepte";
 import RezeptDetail from "./pages/RezeptDetail";
+import RezeptForm from "./pages/RezeptForm";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -14,14 +15,6 @@ function KochenPage() {
   return (
     <div className="page no-nav" style={{ background: "var(--cook-bg)" }}>
       <h1>Kochmodus</h1>
-    </div>
-  );
-}
-
-function NeuPage() {
-  return (
-    <div className="page">
-      <h1>Neues Rezept</h1>
     </div>
   );
 }
@@ -73,7 +66,8 @@ function Shell() {
         <Route path="/" element={<Rezepte />} />
         <Route path="/rezept/:id" element={<RezeptDetail />} />
         <Route path="/rezept/:id/kochen" element={<KochenPage />} />
-        <Route path="/neu" element={<NeuPage />} />
+        <Route path="/rezept/:id/bearbeiten" element={<RezeptForm />} />
+        <Route path="/neu" element={<RezeptForm />} />
         <Route path="/generieren" element={<GenerierenPage />} />
         <Route path="/planen" element={<PlanenPage />} />
         <Route path="/einkaufen" element={<EinkaufenPage />} />

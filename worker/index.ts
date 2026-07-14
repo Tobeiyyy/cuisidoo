@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { authMiddleware, setAuthCookie } from "./auth";
 import { ingredientRoutes } from "./ingredients";
 import { recipeRoutes } from "./recipes";
+import { qAll } from "./db";
 
 export type Env = {
   DB: D1Database;
@@ -28,6 +29,9 @@ app.post("/api/auth/login", async (c) => {
 });
 
 app.get("/api/auth/check", (c) => c.json({ ok: true }));
+
+app.get("/api/equipment", async (c) =>
+  c.json(await qAll(c.env.DB.prepare("SELECT id, name, owned FROM equipment ORDER BY name"))));
 
 app.route("/api/ingredients", ingredientRoutes);
 app.route("/api/recipes", recipeRoutes);
