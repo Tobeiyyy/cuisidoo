@@ -4,7 +4,7 @@ import type { Env } from "./index";
 
 const enc = new TextEncoder();
 
-async function hmac(secret: string, data: string): Promise<string> {
+export async function hmac(secret: string, data: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
   );

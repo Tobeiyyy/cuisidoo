@@ -31,7 +31,7 @@ ${opts.dietBias}
 Wenn das Rezept fertig durchdacht ist, gib es GENAU EINMAL über das Tool save_recipe aus.`;
 }
 
-const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
+export const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
 const SPEEDS = ["0.5","1","1.5","2","2.5","3","3.5","4","4.5","5","5.5","6","6.5","7","7.5","8","8.5","9","9.5","10","Turbo","Teigstufe"];
 const MODES = ["Slow Cooking","Sous-vide","Fermentieren","Reiskocher","Wasserkocher","Eierkocher","Eindicken","Aufwärmen","Anbraten/Karamellisieren","Vorreinigen"];
 const ACCESSORIES = ["Varoma","Gareinsatz","Rühraufsatz","Gemüse-Styler","Messbecher"];

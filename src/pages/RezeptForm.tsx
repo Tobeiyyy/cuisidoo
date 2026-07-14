@@ -2,10 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, useRecipe } from "../api";
+import { INFORMAL_UNITS } from "../../shared/types";
 import type { Ingredient, Scaling, StepKind, UnitDim } from "../../shared/types";
 import type { RecipeSaveInput } from "../../worker/recipes";
 
 const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
+
+// The canonical (weighable/countable) unit for each dimension. Informal units (Prise, TL, …) are
+// presence-only downstream regardless of dimension, so they're always offered alongside whichever
+// canonical unit matches the ingredient's dimension — this is what keeps the unit dropdown from
+// ever offering a canonical unit that mismatches the ingredient (enforced server-side too, see
+// worker/recipes.ts validateUnitDimensions).
+const CANONICAL_UNIT: Record<UnitDim, string> = { mass: "g", volume: "ml", count: "Stück" };
+function unitOptionsFor(dim: UnitDim): string[] {
+  return [CANONICAL_UNIT[dim], ...INFORMAL_UNITS];
+}
 
 const SCALINGS: { value: Scaling; label: string }[] = [
   { value: "linear", label: "Linear" },
@@ -416,7 +427,11 @@ export default function RezeptForm() {
         {/* Zutaten */}
         <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>Zutaten</h2>
         {ingredientRows.map((row) => {
-          const isNew = row.name.trim() !== "" && !findMatch(row.name);
+          const match = findMatch(row.name);
+          const isNew = row.name.trim() !== "" && !match;
+          // Once the name matches a catalog ingredient its dimension is fixed; for a brand-new
+          // ingredient it's whatever unit_dim the "Neue Zutat" section currently has selected.
+          const unitOptions = unitOptionsFor(match?.unit_dim ?? row.unit_dim);
           return (
             <div key={row.key} className="card" style={{ padding: 12, marginBottom: 10 }}>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -425,7 +440,14 @@ export default function RezeptForm() {
                   list="ingredient-catalog"
                   placeholder="Zutat"
                   value={row.name}
-                  onChange={(e) => updateIngredient(row.key, { name: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const matched = findMatch(name);
+                    // Force the unit to the matched ingredient's canonical unit so the row can't
+                    // keep a leftover unit from before the name matched (or from a previous,
+                    // differently-dimensioned ingredient).
+                    updateIngredient(row.key, matched ? { name, unit: CANONICAL_UNIT[matched.unit_dim] } : { name });
+                  }}
                   style={{ flex: 2 }}
                 />
                 <button
@@ -454,7 +476,7 @@ export default function RezeptForm() {
                   onChange={(e) => updateIngredient(row.key, { unit: e.target.value })}
                   style={{ flex: 1, minWidth: 90 }}
                 >
-                  {UNITS.map((u) => (
+                  {unitOptions.map((u) => (
                     <option key={u} value={u}>
                       {u}
                     </option>
@@ -500,7 +522,13 @@ export default function RezeptForm() {
                   <select
                     className="input"
                     value={row.unit_dim}
-                    onChange={(e) => updateIngredient(row.key, { unit_dim: e.target.value as UnitDim })}
+                    onChange={(e) => {
+                      const unit_dim = e.target.value as UnitDim;
+                      // Keep the quantity's unit in step with the newly-chosen dimension, same as
+                      // when a name match forces it — otherwise switching to e.g. "count" here
+                      // could leave "g" selected, which the server would then reject.
+                      updateIngredient(row.key, { unit_dim, unit: CANONICAL_UNIT[unit_dim] });
+                    }}
                     style={{ flex: 1, minWidth: 130 }}
                   >
                     {UNIT_DIMS.map((d) => (

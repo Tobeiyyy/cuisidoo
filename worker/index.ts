@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { authMiddleware, setAuthCookie } from "./auth";
+import { authMiddleware, setAuthCookie, hmac } from "./auth";
 import { ingredientRoutes } from "./ingredients";
 import { recipeRoutes } from "./recipes";
 import { generateRoutes } from "./generate";
@@ -20,13 +20,29 @@ export type App = Hono<{ Bindings: Env }>;
 
 const app: App = new Hono();
 
+// Shared malformed-JSON / unexpected-error guard for every route below. Never logs request
+// bodies or keys — only the error message — so accidental logging can't leak recipe/auth data.
+app.onError((err, c) => {
+  if (err instanceof SyntaxError) {
+    return c.json({ error: "Ungültige Anfrage." }, 400);
+  }
+  console.error(err instanceof Error ? err.message : String(err));
+  return c.json({ error: "Interner Fehler." }, 500);
+});
+
 app.use("/api/*", authMiddleware);
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 
 app.post("/api/auth/login", async (c) => {
   const { passphrase } = await c.req.json<{ passphrase: string }>();
-  if (passphrase !== c.env.AUTH_PASSPHRASE) return c.json({ error: "falsche Passphrase" }, 401);
+  // Compare HMAC digests of both sides rather than the raw passphrase directly, so a failed
+  // login can't be used to time-probe the correct passphrase character by character.
+  const [supplied, expected] = await Promise.all([
+    hmac(c.env.AUTH_SECRET, typeof passphrase === "string" ? passphrase : ""),
+    hmac(c.env.AUTH_SECRET, c.env.AUTH_PASSPHRASE),
+  ]);
+  if (supplied !== expected) return c.json({ error: "falsche Passphrase" }, 401);
   await setAuthCookie(c, c.env.AUTH_SECRET);
   return c.json({ ok: true });
 });

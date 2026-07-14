@@ -62,6 +62,7 @@ export default function RezeptDetail() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageBroken, setImageBroken] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const portions = portionsOverride ?? recipe?.servings_base ?? 1;
 
@@ -86,21 +87,30 @@ export default function RezeptDetail() {
 
   async function toggleFavorite() {
     if (!recipe) return;
-    await api(`/api/recipes/${recipe.id}/favorite`, {
-      method: "PATCH",
-      body: JSON.stringify({ favorite: !recipe.favorite }),
-    });
-    queryClient.invalidateQueries({ queryKey: ["recipe", id] });
-    queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    try {
+      await api(`/api/recipes/${recipe.id}/favorite`, {
+        method: "PATCH",
+        body: JSON.stringify({ favorite: !recipe.favorite }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+      setActionError(null);
+    } catch {
+      setActionError("Aktion fehlgeschlagen.");
+    }
   }
 
   async function handleDelete() {
     if (!recipe) return;
     if (!confirm(`"${recipe.title}" wirklich löschen?`)) return;
-    await api(`/api/recipes/${recipe.id}`, { method: "DELETE" });
-    queryClient.removeQueries({ queryKey: ["recipe", id] });
-    queryClient.invalidateQueries({ queryKey: ["recipes"] });
-    navigate("/");
+    try {
+      await api(`/api/recipes/${recipe.id}`, { method: "DELETE" });
+      queryClient.removeQueries({ queryKey: ["recipe", id] });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+      navigate("/");
+    } catch {
+      setActionError("Aktion fehlgeschlagen.");
+    }
   }
 
   async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -124,9 +134,14 @@ export default function RezeptDetail() {
   async function handleImageDelete() {
     if (!recipe) return;
     if (!confirm("Foto wirklich entfernen?")) return;
-    await deleteRecipeImage(recipe.id);
-    queryClient.invalidateQueries({ queryKey: ["recipe", id] });
-    queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    try {
+      await deleteRecipeImage(recipe.id);
+      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+      setActionError(null);
+    } catch {
+      setActionError("Aktion fehlgeschlagen.");
+    }
   }
 
   return (
@@ -296,6 +311,12 @@ export default function RezeptDetail() {
           <span>{portions} Portionen</span>
           {recipe.offline && <span className="chip">Offline</span>}
         </div>
+
+        {actionError && (
+          <p style={{ color: "var(--accent)", fontSize: 13, marginBottom: 16 }} role="alert">
+            {actionError}
+          </p>
+        )}
 
         {/* Portion stepper */}
         <div

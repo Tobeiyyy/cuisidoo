@@ -35,3 +35,32 @@ describe("SAVE_RECIPE_TOOL", () => {
     expect(SAVE_RECIPE_TOOL.input_schema.additionalProperties).toBe(false);
   });
 });
+
+// These lists ARE the contract between worker/recipes.ts's RecipeSaveInput and the tool schema
+// the model is asked to fill in — hard-coded here (rather than derived from the type) so a schema
+// edit that silently drifts from RecipeSaveInput's fields fails this test instead of shipping.
+describe("SAVE_RECIPE_TOOL mirrors RecipeSaveInput", () => {
+  const EXPECTED_TOP_LEVEL = [
+    "title", "description", "servings_base", "total_time_min", "active_time_min",
+    "tags", "equipment", "ingredients", "steps",
+  ];
+  const EXPECTED_INGREDIENT = [
+    "name", "category", "unit_dim", "grams_per_piece", "quantity", "unit", "scaling", "note", "section",
+  ];
+  const EXPECTED_STEP = [
+    "kind", "text", "seconds", "temp", "speed", "reverse", "mode", "accessory", "device",
+  ];
+
+  it("has top-level property keys matching RecipeSaveInput", () => {
+    const keys = Object.keys(SAVE_RECIPE_TOOL.input_schema.properties);
+    expect(keys.sort()).toEqual([...EXPECTED_TOP_LEVEL].sort());
+  });
+  it("has ingredient item property keys matching RecipeSaveInput['ingredients'][number]", () => {
+    const keys = Object.keys(SAVE_RECIPE_TOOL.input_schema.properties.ingredients.items.properties);
+    expect(keys.sort()).toEqual([...EXPECTED_INGREDIENT].sort());
+  });
+  it("has step item property keys matching RecipeSaveInput['steps'][number]", () => {
+    const keys = Object.keys(SAVE_RECIPE_TOOL.input_schema.properties.steps.items.properties);
+    expect(keys.sort()).toEqual([...EXPECTED_STEP].sort());
+  });
+});

@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from "./index";
 import type { Scaling, RecipeStep, UnitDim } from "../shared/types";
-import { resolveIngredients } from "./ingredients";
+import { resolveIngredients, matchIngredient, normalizeName } from "./ingredients";
 import { getFullRecipe, qAll } from "./db";
 import { scoreHandler } from "./nutrition";
 import { cookedHandler } from "./shopping";
+import { UNITS } from "./prompt";
 
 export interface RecipeSaveInput {
   title: string; description: string | null; servings_base: number;
@@ -15,9 +16,84 @@ export interface RecipeSaveInput {
   steps: Omit<RecipeStep, "position">[];
 }
 
-async function replaceChildren(db: D1Database, recipeId: number, input: RecipeSaveInput) {
+const SCALINGS = ["linear", "damped", "fixed"];
+const STEP_KINDS = ["tm6", "off_device"];
+
+/**
+ * Minimal shape validation shared by POST and PUT /api/recipes, run before any database write.
+ * Returns a German 400 message on the first violation found, or null if the input is well-formed.
+ * This is a structural check only (types/enums/presence) — semantic checks that need the DB
+ * (e.g. unit-vs-ingredient-dimension) live in validateUnitDimensions below.
+ */
+export function validateRecipeInput(input: any): string | null {
+  if (typeof input?.title !== "string" || !input.title.trim()) return "Titel ist erforderlich.";
+  if (!Number.isInteger(input.servings_base) || input.servings_base < 1) {
+    return "Portionen müssen eine ganze Zahl ≥ 1 sein.";
+  }
+  if (!Array.isArray(input.ingredients) || input.ingredients.length < 1) {
+    return "Mindestens eine Zutat wird benötigt.";
+  }
+  if (!Array.isArray(input.steps) || input.steps.length < 1) {
+    return "Mindestens ein Schritt wird benötigt.";
+  }
+  if (!Array.isArray(input.tags)) return "tags muss ein Array sein.";
+  if (!Array.isArray(input.equipment)) return "equipment muss ein Array sein.";
+
+  for (const ing of input.ingredients) {
+    if (typeof ing?.name !== "string" || !ing.name.trim()) return "Jede Zutat benötigt einen Namen.";
+    if (typeof ing.category !== "string" || !ing.category.trim()) return `Kategorie für "${ing.name}" fehlt.`;
+    if (!(UNITS as readonly string[]).includes(ing.unit)) return `Ungültige Einheit für "${ing.name}".`;
+    if (!Number.isFinite(ing.quantity) || ing.quantity <= 0) return `Menge für "${ing.name}" muss größer als 0 sein.`;
+    if (!SCALINGS.includes(ing.scaling)) return `Ungültige Skalierung für "${ing.name}".`;
+  }
+
+  for (const step of input.steps) {
+    if (!STEP_KINDS.includes(step?.kind)) return "Ungültige Schrittart.";
+    if (typeof step.text !== "string" || !step.text.trim()) return "Jeder Schritt benötigt einen Text.";
+    if (step.kind === "off_device" && (typeof step.device !== "string" || !step.device.trim())) {
+      return "Externe Schritte benötigen ein Gerät.";
+    }
+  }
+
+  return null;
+}
+
+const CANONICAL_UNIT_DIM: Record<string, UnitDim> = { g: "mass", ml: "volume", "Stück": "count" };
+
+/**
+ * Enforces that a canonical unit (g/ml/Stück) matches the ingredient's dimension: the catalog's
+ * stored unit_dim for an existing ingredient (matched by name/alias), or the supplied unit_dim for
+ * a brand-new one. Informal units (Prise, TL, …) are presence-only downstream and always pass.
+ * Read-only (no writes), so it's safe to run before resolveIngredients' auto-create.
+ */
+export async function validateUnitDimensions(
+  db: D1Database, ingredients: RecipeSaveInput["ingredients"],
+): Promise<string | null> {
+  const rows = await qAll<{ id: number; name: string; unit_dim: UnitDim }>(db.prepare("SELECT id, name, unit_dim FROM ingredients"));
+  const aliases = await qAll<{ alias: string; ingredient_id: number }>(
+    db.prepare("SELECT alias, ingredient_id FROM ingredient_aliases"));
+  const dimById = new Map(rows.map((r) => [r.id, r.unit_dim]));
+  const byName = new Map(rows.map((r) => [normalizeName(r.name), r.id]));
+  const byAlias = new Map(aliases.map((a) => [normalizeName(a.alias), a.ingredient_id]));
+
+  for (const ing of ingredients) {
+    const expectedDim = CANONICAL_UNIT_DIM[ing.unit];
+    if (!expectedDim) continue; // informal unit — no dimension constraint
+    const matchedId = matchIngredient(ing.name, byName, byAlias);
+    const actualDim = matchedId !== null ? dimById.get(matchedId)! : ing.unit_dim;
+    if (actualDim !== expectedDim) {
+      return `Einheit "${ing.unit}" passt nicht zur Dimension von "${ing.name}".`;
+    }
+  }
+  return null;
+}
+
+async function replaceChildren(
+  db: D1Database, recipeId: number, input: RecipeSaveInput, extraStmts: D1PreparedStatement[] = [],
+) {
   const ids = await resolveIngredients(db, input.ingredients);
   const stmts: D1PreparedStatement[] = [
+    ...extraStmts,
     db.prepare("DELETE FROM recipe_ingredients WHERE recipe_id=?").bind(recipeId),
     db.prepare("DELETE FROM recipe_steps WHERE recipe_id=?").bind(recipeId),
     db.prepare("DELETE FROM recipe_tags WHERE recipe_id=?").bind(recipeId),
@@ -73,17 +149,32 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
     return r ? c.json(r) : c.json({ error: "not found" }, 404);
   })
   .post("/", async (c) => {
+    const source = c.req.query("source");
+    if (source !== undefined && source !== "manual" && source !== "generated") {
+      return c.json({ error: "source muss 'manual' oder 'generated' sein." }, 400);
+    }
     const input = await c.req.json<RecipeSaveInput>();
-    const id = await saveRecipe(c.env.DB, input, (c.req.query("source") as any) ?? "manual");
+    const shapeError = validateRecipeInput(input);
+    if (shapeError) return c.json({ error: shapeError }, 400);
+    const dimError = await validateUnitDimensions(c.env.DB, input.ingredients);
+    if (dimError) return c.json({ error: dimError }, 400);
+    const id = await saveRecipe(c.env.DB, input, (source as "manual" | "generated" | undefined) ?? "manual");
     return c.json({ id }, 201);
   })
   .put("/:id", async (c) => {
     const id = Number(c.req.param("id"));
     const input = await c.req.json<RecipeSaveInput>();
-    await c.env.DB.prepare(
+    const shapeError = validateRecipeInput(input);
+    if (shapeError) return c.json({ error: shapeError }, 400);
+    const dimError = await validateUnitDimensions(c.env.DB, input.ingredients);
+    if (dimError) return c.json({ error: dimError }, 400);
+    // Header UPDATE only runs (as part of the same batch as replaceChildren's statements) once
+    // validation has passed, so a rejected save can never leave the header updated while the
+    // ingredients/steps/tags/equipment rows are left stale or partially replaced.
+    const headerStmt = c.env.DB.prepare(
       "UPDATE recipes SET title=?, description=?, servings_base=?, total_time_min=?, active_time_min=? WHERE id=?",
-    ).bind(input.title, input.description, input.servings_base, input.total_time_min, input.active_time_min, id).run();
-    await replaceChildren(c.env.DB, id, input);
+    ).bind(input.title, input.description, input.servings_base, input.total_time_min, input.active_time_min, id);
+    await replaceChildren(c.env.DB, id, input, [headerStmt]);
     return c.json({ ok: true });
   })
   .delete("/:id", async (c) => {

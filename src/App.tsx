@@ -44,26 +44,28 @@ function Shell() {
 }
 
 function AuthGate() {
-  const { data, error, isLoading, refetch } = useQuery({
+  const { data, error, isLoading } = useQuery({
     queryKey: ["auth-check"],
     queryFn: () => api<{ ok: true }>("/api/auth/check"),
   });
 
   if (isLoading) return null;
 
-  if (error instanceof UnauthorizedError || !data) {
-    if (error instanceof UnauthorizedError) {
-      return <Login />;
-    }
+  if (error instanceof UnauthorizedError) return <Login />;
+
+  // Any other failure (network error, worker unreachable, etc.) means we can't tell whether the
+  // session is still valid — but the installed PWA relaunching offline is exactly this case, and
+  // each page already falls back to its IndexedDB mirror / shows its own error state. Blocking
+  // the whole app behind a fullscreen error card here would lock users out of their offline-
+  // available recipes and shopping list, so proceed into the app instead of refusing to render.
+  if (error || !data) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <div className="card" style={{ textAlign: "center" }}>
-          <p>Verbindung fehlgeschlagen.</p>
-          <button className="btn-accent" onClick={() => refetch()}>
-            Erneut versuchen
-          </button>
+      <>
+        <div role="status" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, textAlign: "center", fontSize: 12, padding: "4px 0", background: "var(--surface)", color: "var(--tx4)" }}>
+          Offline — Verbindung konnte nicht geprüft werden.
         </div>
-      </div>
+        <Shell />
+      </>
     );
   }
 

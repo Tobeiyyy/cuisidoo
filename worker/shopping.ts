@@ -133,6 +133,11 @@ export const shoppingRoutes = new Hono<{ Bindings: Env }>()
     if (quantity !== undefined && quantity !== null && !Number.isFinite(quantity)) {
       return c.json({ error: "quantity muss eine Zahl sein" }, 400);
     }
+    const hasQuantity = quantity !== undefined && quantity !== null;
+    const hasUnit = !!(unit && unit.trim());
+    if (hasQuantity !== hasUnit) {
+      return c.json({ error: "quantity und unit müssen zusammen angegeben werden" }, 400);
+    }
     const res = await c.env.DB.prepare(
       "INSERT INTO shopping_items (ingredient_id, label, quantity, unit, category, checked, source) VALUES (NULL,?,?,?,?,0,'manual') RETURNING id",
     ).bind(label.trim(), quantity ?? null, unit ?? null, category.trim()).first<{ id: number }>();

@@ -63,6 +63,7 @@ export default function Rezepte() {
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>({ kind: "all" });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setQ(searchInput.trim()), 300);
@@ -94,11 +95,16 @@ export default function Rezepte() {
   async function toggleFavorite(e: React.MouseEvent, recipe: RecipeListItem) {
     e.preventDefault();
     e.stopPropagation();
-    await api(`/api/recipes/${recipe.id}/favorite`, {
-      method: "PATCH",
-      body: JSON.stringify({ favorite: !recipe.favorite }),
-    });
-    queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    try {
+      await api(`/api/recipes/${recipe.id}/favorite`, {
+        method: "PATCH",
+        body: JSON.stringify({ favorite: !recipe.favorite }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   const libraryIsEmpty = allRecipes.isSuccess && allRecipes.data.length === 0;
@@ -131,6 +137,12 @@ export default function Rezepte() {
           style={{ border: "none", background: "none", outline: "none", color: "var(--tx)", font: "inherit", flex: 1 }}
         />
       </div>
+
+      {error && (
+        <p style={{ color: "var(--accent)", fontSize: 13, marginBottom: 16 }} role="alert">
+          {error}
+        </p>
+      )}
 
       <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 2 }}>
         <button

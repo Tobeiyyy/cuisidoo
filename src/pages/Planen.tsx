@@ -229,6 +229,7 @@ export default function Planen() {
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerSelected, setPickerSelected] = useState<RecipeListItem | null>(null);
   const [pickerServings, setPickerServings] = useState(2);
+  const [error, setError] = useState<string | null>(null);
 
   const today = new Date();
   const todayIso = formatISODate(today);
@@ -285,15 +286,20 @@ export default function Planen() {
   }
   async function confirmAdd() {
     if (!pickerTarget || !pickerSelected) return;
-    await api("/api/plan", {
-      method: "POST",
-      body: JSON.stringify({
-        date: pickerTarget.date, slot: pickerTarget.slot,
-        recipe_id: pickerSelected.id, servings: pickerServings,
-      }),
-    });
-    closePicker();
-    await refreshPlan();
+    try {
+      await api("/api/plan", {
+        method: "POST",
+        body: JSON.stringify({
+          date: pickerTarget.date, slot: pickerTarget.slot,
+          recipe_id: pickerSelected.id, servings: pickerServings,
+        }),
+      });
+      closePicker();
+      await refreshPlan();
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   function openEntryMenu(entry: PlanEntry) {
@@ -304,25 +310,39 @@ export default function Planen() {
   }
   async function removeEntry(id: number) {
     closeEntryMenu();
-    await api(`/api/plan/${id}`, { method: "DELETE" });
-    await refreshPlan();
+    try {
+      await api(`/api/plan/${id}`, { method: "DELETE" });
+      await refreshPlan();
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
   async function saveServings() {
     if (!entryMenu) return;
-    await api(`/api/plan/${entryMenu.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ servings: entryMenu.servings }),
-    });
-    closeEntryMenu();
-    await refreshPlan();
+    try {
+      await api(`/api/plan/${entryMenu.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ servings: entryMenu.servings }),
+      });
+      closeEntryMenu();
+      await refreshPlan();
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   async function generateShoppingList() {
-    await api("/api/shopping/generate", {
-      method: "POST",
-      body: JSON.stringify({ from, to }),
-    });
-    navigate("/einkaufen");
+    try {
+      await api("/api/shopping/generate", {
+        method: "POST",
+        body: JSON.stringify({ from, to }),
+      });
+      navigate("/einkaufen");
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   const filteredRecipes = useMemo(() => {
@@ -377,6 +397,12 @@ export default function Planen() {
           </div>
         );
       })}
+
+      {error && (
+        <p style={{ color: "var(--accent)", fontSize: 13, marginBottom: 10 }} role="alert">
+          {error}
+        </p>
+      )}
 
       <button type="button" className="btn-accent" onClick={generateShoppingList} style={{ marginTop: 8 }}>
         Einkaufsliste für diese Woche erzeugen

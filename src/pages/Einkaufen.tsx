@@ -66,6 +66,7 @@ export default function Einkaufen() {
   const [addCategory, setAddCategory] = useState("");
   const [addQuantity, setAddQuantity] = useState("");
   const [addUnit, setAddUnit] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const shoppingQuery = useQuery({
     queryKey: ["shopping"],
@@ -121,29 +122,39 @@ export default function Einkaufen() {
 
   async function handleComplete() {
     if (!confirm("Gekaufte Artikel in den Vorrat übernehmen?")) return;
-    await api("/api/shopping/complete", { method: "POST" });
-    queryClient.invalidateQueries({ queryKey: ["shopping"] });
-    queryClient.invalidateQueries({ queryKey: ["pantry"] });
+    try {
+      await api("/api/shopping/complete", { method: "POST" });
+      queryClient.invalidateQueries({ queryKey: ["shopping"] });
+      queryClient.invalidateQueries({ queryKey: ["pantry"] });
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
     if (!addLabel.trim() || !addCategory) return;
-    await api("/api/shopping", {
-      method: "POST",
-      body: JSON.stringify({
-        label: addLabel.trim(),
-        category: addCategory,
-        quantity: addQuantity.trim() ? Number(addQuantity) : undefined,
-        unit: addUnit || undefined,
-      }),
-    });
-    setAddLabel("");
-    setAddCategory("");
-    setAddQuantity("");
-    setAddUnit("");
-    setShowAdd(false);
-    queryClient.invalidateQueries({ queryKey: ["shopping"] });
+    try {
+      await api("/api/shopping", {
+        method: "POST",
+        body: JSON.stringify({
+          label: addLabel.trim(),
+          category: addCategory,
+          quantity: addQuantity.trim() ? Number(addQuantity) : undefined,
+          unit: addUnit || undefined,
+        }),
+      });
+      setAddLabel("");
+      setAddCategory("");
+      setAddQuantity("");
+      setAddUnit("");
+      setShowAdd(false);
+      queryClient.invalidateQueries({ queryKey: ["shopping"] });
+      setError(null);
+    } catch {
+      setError("Aktion fehlgeschlagen.");
+    }
   }
 
   return (
@@ -212,6 +223,12 @@ export default function Einkaufen() {
           </div>
         </div>
       ))}
+
+      {error && (
+        <p style={{ color: "var(--accent)", fontSize: 13, marginBottom: 10 }} role="alert">
+          {error}
+        </p>
+      )}
 
       <button type="button" className="btn-accent" onClick={handleComplete} style={{ marginTop: 8 }}>
         Einkauf abschließen

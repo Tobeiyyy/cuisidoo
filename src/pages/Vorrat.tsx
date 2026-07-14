@@ -52,7 +52,18 @@ export default function Vorrat() {
 
   useEffect(() => {
     const timers = flushTimers.current;
+    const pending = pendingQuantities.current;
     return () => {
+      // A pending debounced quantity would otherwise be silently discarded if the user navigates
+      // away before the debounce window elapses — flush each one immediately instead (best
+      // effort; nothing left mounted to show a failure, so just swallow errors) before clearing
+      // the timers that would have fired them.
+      for (const [ingredientId, quantity] of pending.entries()) {
+        api("/api/pantry", {
+          method: "PUT",
+          body: JSON.stringify({ ingredient_id: ingredientId, quantity }),
+        }).catch(() => {});
+      }
       for (const timer of timers.values()) clearTimeout(timer);
     };
   }, []);
