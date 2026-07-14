@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
+import RecipeThumb from "../components/RecipeThumb";
 
 interface RecipeListItem {
   id: number;
@@ -14,20 +15,6 @@ interface RecipeListItem {
 }
 
 type Filter = { kind: "all" } | { kind: "favorite" } | { kind: "cookable" } | { kind: "tag"; tag: string };
-
-// Decorative placeholder-card gradients, values lifted directly from mockup 2a (not part of the design token system).
-const GRADIENTS = [
-  "linear-gradient(135deg,#2A1E18,#1E1412)",
-  "linear-gradient(135deg,#1A1E18,#121614)",
-  "linear-gradient(135deg,#1E1A18,#161210)",
-  "linear-gradient(135deg,#181A1E,#101216)",
-  "linear-gradient(135deg,#1E181A,#141012)",
-  "linear-gradient(135deg,#18181E,#101016)",
-];
-
-function gradientFor(id: number) {
-  return GRADIENTS[id % GRADIENTS.length];
-}
 
 function PlusIcon() {
   return (
@@ -201,19 +188,7 @@ export default function Rezepte() {
               style={{ overflow: "hidden", cursor: "pointer", display: "flex", gap: 12, padding: 0 }}
               onClick={() => navigate(`/rezept/${r.id}`)}
             >
-              <div
-                style={{
-                  width: 88,
-                  height: 88,
-                  flexShrink: 0,
-                  background: gradientFor(r.id),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span style={{ fontSize: 22, fontWeight: 700, color: "var(--tx4)" }}>{r.title.charAt(0)}</span>
-              </div>
+              <RecipeThumb recipe={r} size={88} fontSize={22} />
               <div style={{ flex: 1, minWidth: 0, padding: "12px 12px 12px 0", display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)", lineHeight: 1.3 }}>{r.title}</div>

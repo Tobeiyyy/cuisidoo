@@ -39,7 +39,7 @@ export async function setAuthCookie(c: any, secret: string) {
 
 export const authMiddleware: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
   const path = new URL(c.req.url).pathname;
-  if (path === "/api/auth/login" || path === "/api/health") return next();
+  if (path === "/api/auth/login" || path === "/api/health" || path.startsWith("/api/images/")) return next();
   const token = getCookie(c, "cuisidoo_auth");
   if (!token || !(await verifyToken(c.env.AUTH_SECRET, token))) {
     return c.json({ error: "unauthorized" }, 401);

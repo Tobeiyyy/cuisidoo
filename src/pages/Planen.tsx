@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { mondayOf, addDays, formatISODate, formatDayLabel, weekdayName, weekRangeLabel } from "../format";
+import RecipeThumb from "../components/RecipeThumb";
 
 type Slot = "mittag" | "abend" | "sonstiges";
 
@@ -23,19 +24,6 @@ interface RecipeListItem {
 }
 
 const SLOT_LABELS: Record<Slot, string> = { mittag: "Mittag", abend: "Abend", sonstiges: "Sonstiges" };
-
-// Decorative placeholder-card gradients, values lifted directly from mockup 2a/2b (not part of the design token system).
-const GRADIENTS = [
-  "linear-gradient(135deg,#2A1E18,#1E1412)",
-  "linear-gradient(135deg,#1A1E18,#121614)",
-  "linear-gradient(135deg,#1E1A18,#161210)",
-  "linear-gradient(135deg,#181A1E,#101216)",
-  "linear-gradient(135deg,#1E181A,#141012)",
-  "linear-gradient(135deg,#18181E,#101016)",
-];
-function gradientFor(id: number) {
-  return GRADIENTS[id % GRADIENTS.length];
-}
 
 function ChevronLeftIcon() {
   return (
@@ -96,14 +84,12 @@ function EntryCard({
       style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, cursor: "pointer", position: "relative" }}
       onClick={() => onNavigate(entry.recipe_id)}
     >
-      <div
-        style={{
-          width: 52, height: 52, flexShrink: 0, borderRadius: "var(--r-sm)",
-          background: gradientFor(entry.recipe_id), display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <span style={{ fontSize: 18, fontWeight: 700, color: "var(--tx4)" }}>{entry.title.charAt(0)}</span>
-      </div>
+      <RecipeThumb
+        recipe={{ id: entry.recipe_id, title: entry.title, image_key: entry.image_key }}
+        size={52}
+        fontSize={18}
+        radius="var(--r-sm)"
+      />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {entry.title}
@@ -434,11 +420,7 @@ export default function Planen() {
                         className="list-row"
                         style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer", color: "var(--tx)", font: "inherit" }}
                       >
-                        <div
-                          style={{ width: 40, height: 40, borderRadius: "var(--r-sm)", background: gradientFor(r.id), flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
-                        >
-                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--tx4)" }}>{r.title.charAt(0)}</span>
-                        </div>
+                        <RecipeThumb recipe={r} size={40} fontSize={14} radius="var(--r-sm)" />
                         <span style={{ flex: 1 }}>{r.title}</span>
                       </button>
                     ))}

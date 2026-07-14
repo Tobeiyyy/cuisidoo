@@ -85,6 +85,44 @@ export async function toggleItem(id: number, checked: boolean): Promise<void> {
   }
 }
 
+/**
+ * Downscales an image file client-side (createImageBitmap preserves EXIF orientation by default)
+ * to at most 1280px on the longest edge and re-encodes as JPEG q0.8, so uploads stay small and
+ * consistent regardless of the source photo's resolution or format.
+ */
+export async function downscaleImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const maxEdge = 1280;
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("encoding failed"))), "image/jpeg", 0.8);
+  });
+}
+
+/** Uploads a (already downscaled) JPEG blob as the recipe's photo; returns the new image_key. */
+export async function uploadRecipeImage(id: string | number, blob: Blob): Promise<{ image_key: string }> {
+  const res = await fetch(`/api/recipes/${id}/image`, {
+    method: "POST",
+    headers: { "content-type": "image/jpeg" },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+/** Removes a recipe's photo (both the R2 object and the image_key column). */
+export async function deleteRecipeImage(id: string | number): Promise<void> {
+  await api(`/api/recipes/${id}/image`, { method: "DELETE" });
+}
+
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
 export function useScoreRecipe(id: string | undefined) {
   const queryClient = useQueryClient();

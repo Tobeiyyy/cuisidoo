@@ -97,4 +97,28 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
     return c.json({ ok: true });
   })
   .post("/:id/score", scoreHandler)
-  .post("/:id/cooked", cookedHandler);
+  .post("/:id/cooked", cookedHandler)
+  .post("/:id/image", async (c) => {
+    const id = Number(c.req.param("id"));
+    const recipe = await c.env.DB.prepare("SELECT id FROM recipes WHERE id=?").bind(id).first();
+    if (!recipe) return c.json({ error: "not found" }, 404);
+    const contentType = c.req.header("content-type") ?? "";
+    if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+      return c.json({ error: "unsupported content type" }, 415);
+    }
+    const body = await c.req.arrayBuffer();
+    if (body.byteLength > 5 * 1024 * 1024) return c.json({ error: "file too large" }, 413);
+    const key = `recipes/${id}`;
+    await c.env.BUCKET.put(key, body, { httpMetadata: { contentType } });
+    await c.env.DB.prepare("UPDATE recipes SET image_key=? WHERE id=?").bind(key, id).run();
+    return c.json({ image_key: key });
+  })
+  .delete("/:id/image", async (c) => {
+    const id = Number(c.req.param("id"));
+    const recipe = await c.env.DB.prepare("SELECT image_key FROM recipes WHERE id=?").bind(id)
+      .first<{ image_key: string | null }>();
+    if (!recipe) return c.json({ error: "not found" }, 404);
+    if (recipe.image_key) await c.env.BUCKET.delete(recipe.image_key);
+    await c.env.DB.prepare("UPDATE recipes SET image_key=NULL WHERE id=?").bind(id).run();
+    return c.json({ ok: true });
+  });

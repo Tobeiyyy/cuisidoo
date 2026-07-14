@@ -33,6 +33,18 @@ app.post("/api/auth/login", async (c) => {
 
 app.get("/api/auth/check", (c) => c.json({ ok: true }));
 
+app.get("/api/images/*", async (c) => {
+  const key = new URL(c.req.url).pathname.replace(/^\/api\/images\//, "");
+  const object = await c.env.BUCKET.get(key);
+  if (!object) return c.json({ error: "not found" }, 404);
+  return new Response(object.body, {
+    headers: {
+      "content-type": object.httpMetadata?.contentType ?? "application/octet-stream",
+      "cache-control": "public, max-age=31536000, immutable",
+    },
+  });
+});
+
 app.route("/api/ingredients", ingredientRoutes);
 app.route("/api/recipes", recipeRoutes);
 app.route("/api/generate", generateRoutes);

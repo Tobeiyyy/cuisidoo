@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, useRecipe, useScoreRecipe } from "../api";
+import { api, deleteRecipeImage, downscaleImage, uploadRecipeImage, useRecipe, useScoreRecipe } from "../api";
 import RecipeBody from "../components/RecipeBody";
 
 const TIER_LABELS: Record<string, string> = {
@@ -35,6 +35,23 @@ function MoreIcon() {
   );
 }
 
+function CameraIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function RezeptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,6 +60,9 @@ export default function RezeptDetail() {
   const scoreRecipe = useScoreRecipe(id);
   const [portionsOverride, setPortionsOverride] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageBroken, setImageBroken] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const portions = portionsOverride ?? recipe?.servings_base ?? 1;
 
   if (isLoading) {
@@ -83,6 +103,32 @@ export default function RezeptDetail() {
     navigate("/");
   }
 
+  async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !recipe) return;
+    setUploadingImage(true);
+    try {
+      const blob = await downscaleImage(file);
+      await uploadRecipeImage(recipe.id, blob);
+      setImageBroken(false);
+      await queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      await queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    } catch {
+      alert("Foto konnte nicht hochgeladen werden.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleImageDelete() {
+    if (!recipe) return;
+    if (!confirm("Foto wirklich entfernen?")) return;
+    await deleteRecipeImage(recipe.id);
+    queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+    queryClient.invalidateQueries({ queryKey: ["recipes"] });
+  }
+
   return (
     <div className="page" style={{ padding: 0, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       {/* Hero */}
@@ -90,13 +136,74 @@ export default function RezeptDetail() {
         style={{
           position: "relative",
           height: 240,
-          background: "linear-gradient(135deg,var(--hero-grad-a) 0%,var(--hero-grad-b) 100%)",
+          background: recipe.image_key && !imageBroken ? "var(--surface)" : "linear-gradient(135deg,var(--hero-grad-a) 0%,var(--hero-grad-b) 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <span style={{ fontSize: 13, color: "var(--tx4)" }}>{recipe.image_key ? "" : "Foto folgt"}</span>
+        {recipe.image_key && !imageBroken ? (
+          <img
+            src={`/api/images/${recipe.image_key}`}
+            alt=""
+            onError={() => setImageBroken(true)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          <span style={{ fontSize: 13, color: "var(--tx4)" }}>Foto folgt</span>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImagePick}
+          style={{ display: "none" }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingImage}
+          aria-label="Foto hochladen"
+          style={{
+            position: "absolute",
+            bottom: 16,
+            right: 16,
+            width: 44,
+            height: 44,
+            background: "var(--overlay-bg)",
+            border: "1px solid var(--border)",
+            borderRadius: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: uploadingImage ? "default" : "pointer",
+          }}
+        >
+          {uploadingImage ? <span className="spinner" /> : <CameraIcon />}
+        </button>
+        {recipe.image_key && !imageBroken && (
+          <button
+            onClick={handleImageDelete}
+            aria-label="Foto entfernen"
+            style={{
+              position: "absolute",
+              bottom: 16,
+              right: 68,
+              width: 32,
+              height: 32,
+              background: "var(--overlay-bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <CloseIcon />
+          </button>
+        )}
         <div style={{ position: "absolute", top: 20, left: 16, right: 16, display: "flex", justifyContent: "space-between" }}>
           <button
             onClick={() => navigate(-1)}
