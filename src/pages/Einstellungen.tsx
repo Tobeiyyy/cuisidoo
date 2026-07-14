@@ -26,6 +26,7 @@ export default function Einstellungen() {
   });
 
   const equipment = equipmentQuery.data ?? [];
+  const [equipmentErrors, setEquipmentErrors] = useState<Set<number>>(new Set());
 
   const [dietBias, setDietBias] = useState("");
   const [defaultServings, setDefaultServings] = useState("2");
@@ -53,7 +54,14 @@ export default function Einstellungen() {
         method: "PUT",
         body: JSON.stringify({ owned: !!newOwned }),
       });
-    } finally {
+      setEquipmentErrors((prev) => {
+        if (!prev.has(item.id)) return prev;
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    } catch {
+      setEquipmentErrors((prev) => new Set(prev).add(item.id));
       queryClient.invalidateQueries({ queryKey: ["equipment"] });
     }
   }
@@ -93,15 +101,22 @@ export default function Einstellungen() {
           <p style={{ color: "var(--tx4)", fontSize: 13, padding: "12px 0" }}>Lädt…</p>
         )}
         {equipment.map((item) => (
-          <label key={item.id} className="list-row" style={{ cursor: "pointer" }}>
-            <span style={{ flex: 1, fontSize: 15, color: "var(--tx)" }}>{item.name}</span>
-            <input
-              type="checkbox"
-              checked={!!item.owned}
-              onChange={() => toggleEquipment(item)}
-              style={{ width: 20, height: 20, accentColor: "var(--accent)", cursor: "pointer" }}
-            />
-          </label>
+          <div key={item.id}>
+            <label className="list-row" style={{ cursor: "pointer" }}>
+              <span style={{ flex: 1, fontSize: 15, color: "var(--tx)" }}>{item.name}</span>
+              <input
+                type="checkbox"
+                checked={!!item.owned}
+                onChange={() => toggleEquipment(item)}
+                style={{ width: 20, height: 20, accentColor: "var(--accent)", cursor: "pointer" }}
+              />
+            </label>
+            {equipmentErrors.has(item.id) && (
+              <p style={{ color: "var(--accent)", fontSize: 12, margin: "0 0 8px" }} role="alert">
+                Speichern fehlgeschlagen
+              </p>
+            )}
+          </div>
         ))}
       </div>
 

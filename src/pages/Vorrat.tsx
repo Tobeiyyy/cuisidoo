@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type { Ingredient, UnitDim } from "../../shared/types";
@@ -36,10 +36,26 @@ function PlusIcon() {
   );
 }
 
+const FLUSH_DELAY_MS = 400;
+
 export default function Vorrat() {
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [addQuery, setAddQuery] = useState("");
+  const [writeErrors, setWriteErrors] = useState<Set<number>>(new Set());
+
+  // Per-ingredient pending target quantity and debounce timer. Rapid stepper taps only update
+  // these synchronously; a single PUT per ingredient fires after the debounce window with
+  // whatever the latest target was, so out-of-order network completions can't clobber state.
+  const pendingQuantities = useRef(new Map<number, number>());
+  const flushTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  useEffect(() => {
+    const timers = flushTimers.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+    };
+  }, []);
 
   const pantryQuery = useQuery({
     queryKey: ["pantry"],
@@ -72,9 +88,39 @@ export default function Vorrat() {
       .slice(0, 30);
   }, [catalog, pantryIds, addQuery]);
 
-  // Reads and updates the cached quantity synchronously so rapid consecutive taps (before a
-  // re-render lands) each see the previous tap's result instead of a stale closed-over value.
-  async function adjustQuantity(ingredientId: number, delta: number) {
+  function clearWriteError(ingredientId: number) {
+    setWriteErrors((prev) => {
+      if (!prev.has(ingredientId)) return prev;
+      const next = new Set(prev);
+      next.delete(ingredientId);
+      return next;
+    });
+  }
+
+  // Fires once the debounce window elapses: PUTs whatever the latest pending target quantity is
+  // (coalescing any taps that landed during the window) rather than one request per tap. Success
+  // does not invalidate the ["pantry"] query — the optimistic cache update is already correct.
+  // Failure invalidates to resync with the server and surfaces an inline error.
+  function flushQuantity(ingredientId: number) {
+    flushTimers.current.delete(ingredientId);
+    const target = pendingQuantities.current.get(ingredientId);
+    if (target === undefined) return;
+    pendingQuantities.current.delete(ingredientId);
+    api("/api/pantry", {
+      method: "PUT",
+      body: JSON.stringify({ ingredient_id: ingredientId, quantity: target }),
+    })
+      .then(() => clearWriteError(ingredientId))
+      .catch(() => {
+        setWriteErrors((prev) => new Set(prev).add(ingredientId));
+        queryClient.invalidateQueries({ queryKey: ["pantry"] });
+      });
+  }
+
+  // Updates the cached quantity synchronously so rapid consecutive taps (before a re-render
+  // lands) each see the previous tap's result instead of a stale closed-over value, then
+  // (re)starts a per-ingredient debounce timer that flushes only the latest target quantity.
+  function adjustQuantity(ingredientId: number, delta: number) {
     let resolvedQuantity = 0;
     queryClient.setQueryData<PantryItem[]>(["pantry"], (old) => {
       if (!old) return old;
@@ -84,14 +130,13 @@ export default function Vorrat() {
         return resolvedQuantity <= 0 ? [] : [{ ...p, quantity: resolvedQuantity }];
       });
     });
-    try {
-      await api("/api/pantry", {
-        method: "PUT",
-        body: JSON.stringify({ ingredient_id: ingredientId, quantity: resolvedQuantity }),
-      });
-    } finally {
-      queryClient.invalidateQueries({ queryKey: ["pantry"] });
-    }
+    pendingQuantities.current.set(ingredientId, resolvedQuantity);
+    const existingTimer = flushTimers.current.get(ingredientId);
+    if (existingTimer) clearTimeout(existingTimer);
+    flushTimers.current.set(
+      ingredientId,
+      setTimeout(() => flushQuantity(ingredientId), FLUSH_DELAY_MS),
+    );
   }
 
   async function addIngredient(ing: CatalogIngredient) {
@@ -179,35 +224,42 @@ export default function Vorrat() {
           </h2>
           <div className="card" style={{ padding: "0 16px" }}>
             {items.map((item) => (
-              <div key={item.ingredient_id} className="list-row">
-                <span style={{ flex: 1, fontSize: 15, color: "var(--tx)" }}>{item.name}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => adjustQuantity(item.ingredient_id, -stepFor(item.unit_dim))}
-                    aria-label={`${item.name} weniger`}
-                    style={{
-                      width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none",
-                      borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer",
-                    }}
-                  >
-                    −
-                  </button>
-                  <span style={{ fontSize: 14, color: "var(--tx)", minWidth: 64, textAlign: "center" }}>
-                    {item.quantity} {unitLabel(item.unit_dim)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => adjustQuantity(item.ingredient_id, stepFor(item.unit_dim))}
-                    aria-label={`${item.name} mehr`}
-                    style={{
-                      width: 30, height: 30, border: "none", background: "var(--accent)",
-                      borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer",
-                    }}
-                  >
-                    +
-                  </button>
+              <div key={item.ingredient_id}>
+                <div className="list-row">
+                  <span style={{ flex: 1, fontSize: 15, color: "var(--tx)" }}>{item.name}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => adjustQuantity(item.ingredient_id, -stepFor(item.unit_dim))}
+                      aria-label={`${item.name} weniger`}
+                      style={{
+                        width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none",
+                        borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer",
+                      }}
+                    >
+                      −
+                    </button>
+                    <span style={{ fontSize: 14, color: "var(--tx)", minWidth: 64, textAlign: "center" }}>
+                      {item.quantity} {unitLabel(item.unit_dim)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => adjustQuantity(item.ingredient_id, stepFor(item.unit_dim))}
+                      aria-label={`${item.name} mehr`}
+                      style={{
+                        width: 30, height: 30, border: "none", background: "var(--accent)",
+                        borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer",
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+                {writeErrors.has(item.ingredient_id) && (
+                  <p style={{ color: "var(--accent)", fontSize: 12, margin: "0 0 8px" }} role="alert">
+                    Speichern fehlgeschlagen
+                  </p>
+                )}
               </div>
             ))}
           </div>

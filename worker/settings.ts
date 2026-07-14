@@ -12,6 +12,9 @@ export const pantryRoutes = new Hono<{ Bindings: Env }>()
   })
   .put("/", async (c) => {
     const { ingredient_id, quantity } = await c.req.json<{ ingredient_id: number; quantity: number }>();
+    if (!Number.isFinite(quantity)) {
+      return c.json({ error: "quantity must be a finite number" }, 400);
+    }
     if (quantity <= 0) {
       await c.env.DB.prepare("DELETE FROM pantry WHERE ingredient_id=?").bind(ingredient_id).run();
     } else {
@@ -23,6 +26,8 @@ export const pantryRoutes = new Hono<{ Bindings: Env }>()
     return c.json({ ok: true });
   });
 
+const ALLOWED_SETTINGS_KEYS = ["diet_bias", "default_servings", "generation_model"];
+
 export const settingsRoutes = new Hono<{ Bindings: Env }>()
   .get("/", async (c) => {
     const rows = await qAll<{ key: string; value: string }>(c.env.DB.prepare("SELECT key, value FROM settings"));
@@ -32,12 +37,15 @@ export const settingsRoutes = new Hono<{ Bindings: Env }>()
   })
   .put("/", async (c) => {
     const body = await c.req.json<Record<string, string>>();
-    const stmts = Object.entries(body).map(([key, value]) =>
+    const entries = Object.entries(body);
+    const allowed = entries.filter(([key]) => ALLOWED_SETTINGS_KEYS.includes(key));
+    const ignored = entries.filter(([key]) => !ALLOWED_SETTINGS_KEYS.includes(key)).map(([key]) => key);
+    const stmts = allowed.map(([key, value]) =>
       c.env.DB.prepare(
         "INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
       ).bind(key, String(value)));
     if (stmts.length) await c.env.DB.batch(stmts);
-    return c.json({ ok: true });
+    return c.json({ ok: true, ignored });
   });
 
 export const equipmentRoutes = new Hono<{ Bindings: Env }>()
