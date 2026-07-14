@@ -1,0 +1,54 @@
+/* Design tokens — Ember (dark-first, coral accent).
+   Space Grotesk 400/500/600/700 is bundled via @fontsource/space-grotesk
+   and imported in main.tsx (no Google Fonts CDN, works offline). */
+:root {
+  --bg: #111113;
+  --cook-bg: #0a0a0a;
+  --surface: #1a1a1c;
+  --elev: #161618;
+  --raise: #141416;
+  --line: #222224;
+  --border: #2c2c2e;
+  --border2: #3a3a3c;
+  --tx: #e8e8ed;
+  --tx2: #d0d0d5;
+  --tx3: #8e8e93;
+  --tx4: #6e6e73;
+  --accent: #e8734a;
+  --accent-press: #d4623c;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --font: "Space Grotesk", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--tx);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+button,
+input {
+  font-family: inherit;
+}
