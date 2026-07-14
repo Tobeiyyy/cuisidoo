@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { authMiddleware, setAuthCookie } from "./auth";
+import { ingredientRoutes } from "./ingredients";
 
 export type Env = {
   DB: D1Database;
@@ -26,5 +27,7 @@ app.post("/api/auth/login", async (c) => {
 });
 
 app.get("/api/auth/check", (c) => c.json({ ok: true }));
+
+app.route("/api/ingredients", ingredientRoutes);
 
 export default app;
