@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, useRecipe } from "../api";
@@ -101,12 +101,9 @@ export default function RezeptDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: recipe, isLoading, error } = useRecipe(id);
-  const [portions, setPortions] = useState(1);
+  const [portionsOverride, setPortionsOverride] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (recipe) setPortions(recipe.servings_base);
-  }, [recipe?.id, recipe?.servings_base]);
+  const portions = portionsOverride ?? recipe?.servings_base ?? 1;
 
   if (isLoading) {
     return (
@@ -143,6 +140,7 @@ export default function RezeptDetail() {
     if (!recipe) return;
     if (!confirm(`"${recipe.title}" wirklich löschen?`)) return;
     await api(`/api/recipes/${recipe.id}`, { method: "DELETE" });
+    queryClient.removeQueries({ queryKey: ["recipe", id] });
     queryClient.invalidateQueries({ queryKey: ["recipes"] });
     navigate("/");
   }
@@ -154,7 +152,7 @@ export default function RezeptDetail() {
         style={{
           position: "relative",
           height: 240,
-          background: "linear-gradient(135deg,#1E1E20 0%,#141416 100%)",
+          background: "linear-gradient(135deg,var(--hero-grad-a) 0%,var(--hero-grad-b) 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -168,7 +166,7 @@ export default function RezeptDetail() {
             style={{
               width: 44,
               height: 44,
-              background: "rgba(28,28,30,.85)",
+              background: "var(--overlay-bg)",
               border: "1px solid var(--border)",
               borderRadius: 22,
               display: "flex",
@@ -186,7 +184,7 @@ export default function RezeptDetail() {
               style={{
                 width: 44,
                 height: 44,
-                background: "rgba(28,28,30,.85)",
+                background: "var(--overlay-bg)",
                 border: "1px solid var(--border)",
                 borderRadius: 22,
                 display: "flex",
@@ -203,7 +201,7 @@ export default function RezeptDetail() {
               style={{
                 width: 44,
                 height: 44,
-                background: "rgba(28,28,30,.85)",
+                background: "var(--overlay-bg)",
                 border: "1px solid var(--border)",
                 borderRadius: 22,
                 display: "flex",
@@ -261,7 +259,7 @@ export default function RezeptDetail() {
           <span style={{ fontSize: 15, color: "var(--tx)", fontWeight: 500 }}>Portionen</span>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button
-              onClick={() => setPortions((p) => Math.max(1, p - 1))}
+              onClick={() => setPortionsOverride(Math.max(1, portions - 1))}
               aria-label="Weniger Portionen"
               style={{
                 width: 38,
@@ -280,7 +278,7 @@ export default function RezeptDetail() {
               {portions}
             </span>
             <button
-              onClick={() => setPortions((p) => Math.min(24, p + 1))}
+              onClick={() => setPortionsOverride(Math.min(24, portions + 1))}
               aria-label="Mehr Portionen"
               style={{
                 width: 38,

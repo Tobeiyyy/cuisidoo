@@ -15,6 +15,7 @@ interface RecipeListItem {
 
 type Filter = { kind: "all" } | { kind: "favorite" } | { kind: "cookable" } | { kind: "tag"; tag: string };
 
+// Decorative placeholder-card gradients, values lifted directly from mockup 2a (not part of the design token system).
 const GRADIENTS = [
   "linear-gradient(135deg,#2A1E18,#1E1412)",
   "linear-gradient(135deg,#1A1E18,#121614)",
