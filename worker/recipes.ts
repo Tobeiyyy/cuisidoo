@@ -3,6 +3,7 @@ import type { Env } from "./index";
 import type { Scaling, RecipeStep, UnitDim } from "../shared/types";
 import { resolveIngredients } from "./ingredients";
 import { getFullRecipe, qAll } from "./db";
+import { scoreHandler } from "./nutrition";
 
 export interface RecipeSaveInput {
   title: string; description: string | null; servings_base: number;
@@ -93,4 +94,5 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
     await c.env.DB.prepare("UPDATE recipes SET favorite=? WHERE id=?")
       .bind(favorite ? 1 : 0, Number(c.req.param("id"))).run();
     return c.json({ ok: true });
-  });
+  })
+  .post("/:id/score", scoreHandler);

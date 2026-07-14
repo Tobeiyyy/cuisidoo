@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, useRecipe } from "../api";
+import { api, useRecipe, useScoreRecipe } from "../api";
 import RecipeBody from "../components/RecipeBody";
+
+const TIER_LABELS: Record<string, string> = {
+  Optimal: "Optimal", Excellent: "Exzellent", Moderate: "Moderat",
+  Poor: "Schwach", "Very Poor": "Sehr schwach", Toxic: "Toxisch",
+};
 
 function BackIcon() {
   return (
@@ -35,6 +40,7 @@ export default function RezeptDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: recipe, isLoading, error } = useRecipe(id);
+  const scoreRecipe = useScoreRecipe(id);
   const [portionsOverride, setPortionsOverride] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const portions = portionsOverride ?? recipe?.servings_base ?? 1;
@@ -235,10 +241,79 @@ export default function RezeptDetail() {
           portions={portions}
         />
 
-        {/* Nutrition placeholder */}
-        <div className="card" style={{ padding: 16, marginBottom: 28, color: "var(--tx3)", fontSize: 14 }}>
-          Nährwerte folgen in Kürze.
-        </div>
+        {/* Nutrition score */}
+        {recipe.nutrition ? (
+          <div className="card" style={{ padding: 20, marginBottom: 28 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+              <span style={{ fontSize: 34, fontWeight: 700, color: "var(--accent)", lineHeight: 1 }}>
+                {recipe.nutrition.score}
+                <span style={{ fontSize: 16, color: "var(--tx3)", fontWeight: 500 }}>/100</span>
+              </span>
+              <span style={{ fontSize: 14, color: "var(--tx3)" }}>
+                {TIER_LABELS[recipe.nutrition.tier] ?? recipe.nutrition.tier}
+              </span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--tx4)", margin: "0 0 14px" }}>
+              ~{recipe.nutrition.kcal_per_serving} kcal / Portion
+            </p>
+            {recipe.nutrition.pros.length > 0 && (
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px", fontSize: 14, color: "var(--tx2)" }}>
+                {recipe.nutrition.pros.map((p, i) => (
+                  <li key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                    <span style={{ color: "var(--accent)" }}>+</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {recipe.nutrition.cons.length > 0 && (
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", fontSize: 14, color: "var(--tx2)" }}>
+                {recipe.nutrition.cons.map((c, i) => (
+                  <li key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                    <span style={{ color: "var(--tx4)" }}>−</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {scoreRecipe.isError && (
+              <p style={{ color: "var(--accent)", fontSize: 13, margin: "0 0 10px" }} role="alert">
+                {(scoreRecipe.error as Error).message}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => scoreRecipe.mutate(true)}
+              disabled={scoreRecipe.isPending}
+              style={{
+                background: "none", border: "none", color: "var(--tx3)", fontSize: 13,
+                cursor: scoreRecipe.isPending ? "default" : "pointer", padding: 0,
+                display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              {scoreRecipe.isPending && <span className="spinner" />}
+              {scoreRecipe.isPending ? "Bewerte neu…" : "neu bewerten"}
+            </button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 28 }}>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => scoreRecipe.mutate(false)}
+              disabled={scoreRecipe.isPending}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              {scoreRecipe.isPending && <span className="spinner" />}
+              {scoreRecipe.isPending ? "Berechne…" : "Nutrition-Score berechnen"}
+            </button>
+            {scoreRecipe.isError && (
+              <p style={{ color: "var(--accent)", fontSize: 13, margin: "10px 0 0" }} role="alert">
+                {(scoreRecipe.error as Error).message}
+              </p>
+            )}
+          </div>
+        )}
 
         <Link to={`/rezept/${recipe.id}/kochen`} className="btn-accent" style={{ textDecoration: "none" }}>
           Kochen starten
