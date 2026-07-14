@@ -100,17 +100,33 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
   .post("/:id/cooked", cookedHandler)
   .post("/:id/image", async (c) => {
     const id = Number(c.req.param("id"));
-    const recipe = await c.env.DB.prepare("SELECT id FROM recipes WHERE id=?").bind(id).first();
+    const recipe = await c.env.DB.prepare("SELECT image_key FROM recipes WHERE id=?").bind(id)
+      .first<{ image_key: string | null }>();
     if (!recipe) return c.json({ error: "not found" }, 404);
     const contentType = c.req.header("content-type") ?? "";
     if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
       return c.json({ error: "unsupported content type" }, 415);
     }
+    const contentLength = Number(c.req.header("content-length") ?? "0");
+    if (contentLength > 5 * 1024 * 1024) return c.json({ error: "file too large" }, 413);
     const body = await c.req.arrayBuffer();
     if (body.byteLength > 5 * 1024 * 1024) return c.json({ error: "file too large" }, 413);
-    const key = `recipes/${id}`;
+    // Version the key so replacing a photo produces a new URL — GET /api/images/* serves
+    // objects with an immutable cache-control, so reusing the same key would leave clients
+    // (and the CDN) stuck showing the old bytes after a re-upload.
+    const oldKey = recipe.image_key;
+    const key = `recipes/${id}-${Date.now()}`;
     await c.env.BUCKET.put(key, body, { httpMetadata: { contentType } });
     await c.env.DB.prepare("UPDATE recipes SET image_key=? WHERE id=?").bind(key, id).run();
+    if (oldKey) {
+      try {
+        await c.env.BUCKET.delete(oldKey);
+      } catch (err) {
+        // Orphaned R2 object is acceptable; a broken image display is not — never fail the
+        // upload because cleanup of the previous object didn't succeed.
+        console.error("failed to delete old recipe image", oldKey, err);
+      }
+    }
     return c.json({ image_key: key });
   })
   .delete("/:id/image", async (c) => {

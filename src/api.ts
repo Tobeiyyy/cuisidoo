@@ -114,6 +114,7 @@ export async function uploadRecipeImage(id: string | number, blob: Blob): Promis
     headers: { "content-type": "image/jpeg" },
     body: blob,
   });
+  if (res.status === 401) throw new UnauthorizedError();
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   return res.json();
 }
