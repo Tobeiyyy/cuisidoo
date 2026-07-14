@@ -132,13 +132,29 @@ function Shell() {
 }
 
 function AuthGate() {
-  const { data, error, isLoading } = useQuery({
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["auth-check"],
     queryFn: () => api<{ ok: true }>("/api/auth/check"),
   });
 
   if (isLoading) return null;
-  if (error instanceof UnauthorizedError || !data) return <Login />;
+
+  if (error instanceof UnauthorizedError || !data) {
+    if (error instanceof UnauthorizedError) {
+      return <Login />;
+    }
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <div className="card" style={{ textAlign: "center" }}>
+          <p>Verbindung fehlgeschlagen.</p>
+          <button className="btn-accent" onClick={() => refetch()}>
+            Erneut versuchen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return <Shell />;
 }
 
