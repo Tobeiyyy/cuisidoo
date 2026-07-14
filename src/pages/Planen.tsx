@@ -331,6 +331,14 @@ export default function Planen() {
     await refreshPlan();
   }
 
+  async function generateShoppingList() {
+    await api("/api/shopping/generate", {
+      method: "POST",
+      body: JSON.stringify({ from, to }),
+    });
+    navigate("/einkaufen");
+  }
+
   const filteredRecipes = useMemo(() => {
     const q = pickerQuery.trim().toLowerCase();
     return (recipesQuery.data ?? []).filter((r) => !q || r.title.toLowerCase().includes(q)).slice(0, 30);
@@ -384,12 +392,9 @@ export default function Planen() {
         );
       })}
 
-      {/* TODO Task 15: wire this up to POST /api/shopping/generate (or similar) once the shopping-list
-          endpoint exists, then navigate to /einkaufen. */}
-      <button type="button" className="btn-accent" disabled style={{ marginTop: 8 }}>
+      <button type="button" className="btn-accent" onClick={generateShoppingList} style={{ marginTop: 8 }}>
         Einkaufsliste für diese Woche erzeugen
       </button>
-      <p style={{ textAlign: "center", fontSize: 12, color: "var(--tx4)", marginTop: 8 }}>folgt</p>
 
       {pickerTarget && (
         <div

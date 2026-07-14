@@ -4,6 +4,7 @@ import type { Scaling, RecipeStep, UnitDim } from "../shared/types";
 import { resolveIngredients } from "./ingredients";
 import { getFullRecipe, qAll } from "./db";
 import { scoreHandler } from "./nutrition";
+import { cookedHandler } from "./shopping";
 
 export interface RecipeSaveInput {
   title: string; description: string | null; servings_base: number;
@@ -95,4 +96,5 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
       .bind(favorite ? 1 : 0, Number(c.req.param("id"))).run();
     return c.json({ ok: true });
   })
-  .post("/:id/score", scoreHandler);
+  .post("/:id/score", scoreHandler)
+  .post("/:id/cooked", cookedHandler);

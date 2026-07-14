@@ -22,6 +22,17 @@ export function useRecipe(id: string | undefined) {
   });
 }
 
+/**
+ * Sets a shopping-list item's checked state. Single call-site for the mutation so Task 17 can
+ * slot an offline outbox in here later without touching Einkaufen.tsx.
+ */
+export async function toggleItem(id: number, checked: boolean): Promise<void> {
+  await api(`/api/shopping/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checked }),
+  });
+}
+
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
 export function useScoreRecipe(id: string | undefined) {
   const queryClient = useQueryClient();
