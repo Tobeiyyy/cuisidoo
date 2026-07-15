@@ -5,7 +5,7 @@
 
 ## Overview
 
-Five interconnected features that make the pantry the center of the cooking workflow: free-form ingredient management with amountless tracking, inventory-aware AI generation, a "surprise me" suggestion flow, missing-ingredient warnings before cooking, and automatic pantry deduction after cooking.
+Eight interconnected features that make the pantry the center of the cooking workflow: free-form ingredient management with amountless tracking, inventory-aware AI generation, a "surprise me" suggestion flow, recipe import from URLs and text, missing-ingredient warnings before cooking, automatic pantry deduction after cooking, custom tags for organization, and an "Ausprobiert" cooking journal flow with photos.
 
 ## 1. Schema: Amountless Pantry Items
 
@@ -195,6 +195,93 @@ The "Guten Appetit!" screen changes:
 
 If the deduction call fails (network error, etc.), show "Vorrat konnte nicht aktualisiert werden" with a retry button. Don't block the user from closing.
 
+## 7. Recipe Import (URL + Text Paste)
+
+### Problem
+
+Users have recipes from websites, cookbooks, or other sources they want to cook in TM6-optimized form. Currently the only way in is manual entry (tedious) or generation from a wish (doesn't reproduce a specific recipe).
+
+### Flow
+
+A new tab/mode on the Generieren page: **"Rezept importieren"** — a segmented control or toggle alongside the existing generation form.
+
+**Two input modes:**
+
+1. **URL paste** — User pastes a recipe URL. The backend uses the existing `web_search_20260209` server tool to fetch the page content. The AI reads the recipe and adapts it to TM6.
+
+2. **Text paste** — User pastes raw recipe text (copied from a website, typed from a cookbook, or from a photo's OCR). The AI adapts the pasted text to TM6.
+
+Both share a single textarea with a placeholder like "URL oder Rezepttext einfügen…". The backend detects whether the input starts with `http://` or `https://` to choose the mode.
+
+**Shared controls:**
+- Portionen stepper (same as regular generation)
+- Extra-Geräte-erlaubt checkbox (same as regular generation)
+
+### Backend
+
+New endpoint `POST /api/generate/import` with `{ input: string, portionen: number, extraGeraeteErlaubt: boolean }`.
+
+Implementation:
+- If `input` starts with `http(s)://`: use `web_search` tool with a targeted search query containing the URL to fetch the page. The AI then extracts the recipe and adapts it.
+- If `input` is plain text: the AI receives it directly as user context and adapts it.
+- Both paths use the `SAVE_RECIPE_TOOL` schema for structured output (same as regular generation).
+- System prompt variation: instead of "create a recipe for [wish]", it says "adapt this recipe for TM6 while preserving the dish's identity. Keep non-TM6 steps as off_device where appropriate (oven, stove, grill). Optimize cooking times and temperatures for TM6 where possible."
+- Pantry contents are included (per section 3) so the AI can note substitution opportunities.
+- `source` on save: add `"imported"` to the allowed values in the D1 CHECK constraint and TypeScript type.
+
+### Result
+
+Same preview flow as regular generation — user sees the adapted recipe and can save or discard. The recipe is a full TM6-optimized version with both `tm6` and `off_device` steps as appropriate.
+
+### Migration
+
+`ALTER TABLE recipes` to update the CHECK constraint:
+```sql
+-- D1 doesn't support ALTER CHECK, so this is handled in the new migration
+-- by recreating the constraint or using a less restrictive check
+```
+
+Since D1/SQLite CHECK constraints can't be altered in place, the pragmatic approach: the existing CHECK already covers `'generated'` and `'manual'`. We add `'imported'` by using a new migration that creates a trigger or simply relaxes the constraint. Alternatively, since this is a single-user app, we can treat imported recipes as `source = 'generated'` with a tag to distinguish them — simpler, no schema change needed. **Decision: use `source = 'generated'` and auto-add an "Importiert" tag.** This avoids a schema migration while still letting the user filter imported recipes.
+
+## 8. Custom Tags & Cooking Journal
+
+### Current State
+
+Tags already work: free-form strings stored in `recipe_tags`, displayed as filter pills in the library, editable via comma-separated input in the recipe form. The AI also assigns tags during generation.
+
+### What's Missing
+
+- **No inline tag creation from the recipe detail page** — user must edit the recipe to change tags.
+- **Tags aren't shown on the recipe detail page** at all.
+- **No quick "Ausprobiert" / "tried it" flow** after cooking.
+
+### Changes
+
+**Recipe detail page (`RezeptDetail.tsx`):**
+- Display tags below the recipe title as tappable chips.
+- Add a "+" chip at the end — tapping it opens an inline input. User types a new tag name, hits enter, tag is added immediately (optimistic update + `PUT /api/recipes/:id`).
+- Tapping an existing tag chip shows a remove option (long-press or X icon).
+
+**Cooking mode finish screen (`Kochmodus.tsx`):**
+- After auto-deduct, show a **"Ausprobiert markieren?"** prompt with a camera icon.
+- Tapping it: adds an "Ausprobiert" tag to the recipe (if not already tagged) and opens the existing photo upload flow so the user can snap a picture of their cooked dish.
+- Skippable — the "Schließen" button is always available.
+- This naturally turns the app into a cooking journal: recipes tagged "Ausprobiert" with photos of the actual cooked result, filterable in the library.
+
+**Library page (`Rezepte.tsx`):**
+- Already handles tag filtering via pills — custom tags appear automatically alongside AI-assigned ones.
+- No changes needed beyond what already works.
+
+**Recipe form (`RezeptForm.tsx`):**
+- Current comma-separated input stays as-is for bulk editing.
+- No changes needed.
+
+### API
+
+Tag add/remove on the detail page uses the existing `PUT /api/recipes/:id` endpoint which already replaces all tags. The frontend sends the full updated tags array.
+
+For the photo flow: the existing `POST /api/recipes/:id/image` upload endpoint is reused — no changes needed.
+
 ## Files to Modify
 
 | File | Changes |
@@ -202,15 +289,17 @@ If the deduction call fails (network error, etc.), show "Vorrat konnte nicht akt
 | `migrations/0002_pantry_amountless.sql` | New migration: add amountless column |
 | `shared/types.ts` | Add `amountless` to pantry types, add `SuggestionResponse` type |
 | `worker/settings.ts` | Update pantry PUT to accept amountless, add POST /api/ingredients |
-| `worker/generate.ts` | Load pantry, pass to buildSystemPrompt |
-| `worker/prompt.ts` | Add pantry section to system prompt, add suggest prompt builder |
+| `worker/generate.ts` | Load pantry, pass to buildSystemPrompt; add import endpoint |
+| `worker/prompt.ts` | Add pantry section to system prompt, add suggest + import prompt builders |
 | `worker/shopping.ts` | Update cookedHandler to skip amountless; update subtractPantry for amountless |
 | New: `worker/suggest.ts` | Suggest endpoint handler |
 | `src/pages/Vorrat.tsx` | Amountless toggle, free-form ingredient creation form |
-| `src/pages/Generieren.tsx` | "Überrasch mich!" button, suggestion cards UI, sequential generation flow |
-| `src/pages/Kochmodus.tsx` | Missing-ingredient banner, auto-deduct on finish, remove abbuchen button |
-| `src/api.ts` | New API helpers: suggest, check-pantry, create-ingredient |
+| `src/pages/Generieren.tsx` | "Überrasch mich!" button, suggestion cards, import tab, sequential generation flow |
+| `src/pages/Kochmodus.tsx` | Missing-ingredient banner, auto-deduct on finish, "Ausprobiert" prompt with photo |
+| `src/pages/RezeptDetail.tsx` | Display tags as chips, inline tag add/remove |
+| `src/api.ts` | New API helpers: suggest, check-pantry, create-ingredient, import |
 | `src/pages/Einkaufen.tsx` | No changes (shopping already handles ingredient_id items) |
+| `src/pages/Rezepte.tsx` | No changes (tag filtering already works for custom tags) |
 
 ## Out of Scope
 
@@ -219,3 +308,5 @@ If the deduction call fails (network error, etc.), show "Vorrat konnte nicht akt
 - Undo for pantry deductions
 - Recipe sharing or multi-user pantry
 - Barcode scanning for pantry adds
+- OCR from cookbook photos (user pastes text manually)
+- Recipe version history / diff between original and adapted
