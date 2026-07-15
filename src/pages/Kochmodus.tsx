@@ -2,7 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { addToShoppingList, api, checkPantry, useRecipe, type MissingIngredient } from "../api";
+import {
+  addToShoppingList,
+  api,
+  buildTagsUpdate,
+  checkPantry,
+  downscaleImage,
+  uploadRecipeImage,
+  useRecipe,
+  type MissingIngredient,
+} from "../api";
 import { scaleQuantity } from "../../shared/scaling";
 import { formatQuantity, formatSeconds, formatTemp } from "../format";
 import type { RecipeIngredient, RecipeStep } from "../../shared/types";
@@ -56,10 +65,12 @@ export default function Kochmodus() {
   const [missingDismissed, setMissingDismissed] = useState(false);
   const [addingToList, setAddingToList] = useState(false);
   const [deductState, setDeductState] = useState<"pending" | "done" | "error">("pending");
+  const [ausprobiert, setAusprobiert] = useState(false);
 
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const steps = recipe?.steps ?? [];
   const step: RecipeStep | undefined = steps[stepIndex];
@@ -245,6 +256,55 @@ export default function Kochmodus() {
             </button>
           </div>
         )}
+        {deductState === "done" && !recipe.tags.includes("Ausprobiert") && !ausprobiert && (
+          <div style={{ marginTop: 20 }}>
+            <button
+              className="btn-ghost"
+              onClick={async () => {
+                if (!id) return;
+                try {
+                  const updatedTags = [...recipe.tags, "Ausprobiert"];
+                  await api(`/api/recipes/${id}`, {
+                    method: "PUT",
+                    body: JSON.stringify(buildTagsUpdate(recipe, updatedTags)),
+                  });
+                  setAusprobiert(true);
+                  queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+                  queryClient.invalidateQueries({ queryKey: ["recipes"] });
+                  fileInputRef.current?.click();
+                } catch {
+                  // best-effort — the finish screen still closes normally via "Schließen"
+                }
+              }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              📸 Ausprobiert markieren & Foto
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file || !id) return;
+                try {
+                  const blob = await downscaleImage(file);
+                  await uploadRecipeImage(id, blob);
+                  queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+                } catch {
+                  // best-effort — Ausprobiert is already saved regardless of the photo
+                }
+              }}
+              style={{ display: "none" }}
+            />
+          </div>
+        )}
+        {ausprobiert && (
+          <p style={{ color: "var(--tx3)", fontSize: 13, marginTop: 12 }}>Als ausprobiert markiert ✓</p>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 32 }}>
           <button className="btn-ghost" onClick={() => navigate(`/rezept/${id}`)}>
             Schließen

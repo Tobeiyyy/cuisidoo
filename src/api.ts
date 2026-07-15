@@ -197,6 +197,39 @@ export async function addToShoppingList(items: { ingredient_id: number; label: s
   }
 }
 
+/**
+ * Builds a full `PUT /api/recipes/:id` body for a tags-only edit (RezeptDetail's inline tag
+ * chips, Kochmodus's "Ausprobiert" flag): the endpoint replaces the whole recipe row, so every
+ * other field is echoed back unchanged and only `tags` differs.
+ *
+ * Ingredient `category`/`unit_dim` are part of the request shape but are only ever read when an
+ * ingredient name doesn't already match the catalog — which can't happen here, since every
+ * ingredient in `recipe.ingredients` came from the catalog via this same recipe. The placeholder
+ * values below satisfy the shape check and are never actually persisted.
+ */
+export function buildTagsUpdate(recipe: Recipe, tags: string[]) {
+  return {
+    title: recipe.title,
+    description: recipe.description,
+    servings_base: recipe.servings_base,
+    total_time_min: recipe.total_time_min,
+    active_time_min: recipe.active_time_min,
+    tags,
+    equipment: recipe.equipment,
+    ingredients: recipe.ingredients.map((ing) => ({
+      name: ing.name,
+      category: "Sonstiges",
+      unit_dim: "mass" as const,
+      quantity: ing.quantity,
+      unit: ing.unit,
+      scaling: ing.scaling,
+      note: ing.note,
+      section: ing.section,
+    })),
+    steps: recipe.steps,
+  };
+}
+
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
 export function useScoreRecipe(id: string | undefined) {
   const queryClient = useQueryClient();

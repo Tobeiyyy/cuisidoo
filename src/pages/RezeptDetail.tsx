@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, deleteRecipeImage, downscaleImage, uploadRecipeImage, useRecipe, useScoreRecipe } from "../api";
+import { api, buildTagsUpdate, deleteRecipeImage, downscaleImage, uploadRecipeImage, useRecipe, useScoreRecipe } from "../api";
 import RecipeBody from "../components/RecipeBody";
 
 const TIER_LABELS: Record<string, string> = {
@@ -63,6 +63,8 @@ export default function RezeptDetail() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageBroken, setImageBroken] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [addingTag, setAddingTag] = useState(false);
+  const [newTag, setNewTag] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const portions = portionsOverride ?? recipe?.servings_base ?? 1;
 
@@ -141,6 +143,47 @@ export default function RezeptDetail() {
       setActionError(null);
     } catch {
       setActionError("Aktion fehlgeschlagen.");
+    }
+  }
+
+  async function handleAddTag() {
+    if (!recipe || !newTag.trim()) return;
+    const tag = newTag.trim();
+    if (recipe.tags.includes(tag)) {
+      setNewTag("");
+      setAddingTag(false);
+      return;
+    }
+    const updatedTags = [...recipe.tags, tag];
+    // Optimistic update
+    queryClient.setQueryData(["recipe", id], { ...recipe, tags: updatedTags });
+    setNewTag("");
+    setAddingTag(false);
+    try {
+      await api(`/api/recipes/${recipe.id}`, {
+        method: "PUT",
+        body: JSON.stringify(buildTagsUpdate(recipe, updatedTags)),
+      });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    } catch {
+      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      setActionError("Tag konnte nicht hinzugefügt werden.");
+    }
+  }
+
+  async function handleRemoveTag(tag: string) {
+    if (!recipe || !confirm(`Tag "${tag}" entfernen?`)) return;
+    const updatedTags = recipe.tags.filter((t) => t !== tag);
+    queryClient.setQueryData(["recipe", id], { ...recipe, tags: updatedTags });
+    try {
+      await api(`/api/recipes/${recipe.id}`, {
+        method: "PUT",
+        body: JSON.stringify(buildTagsUpdate(recipe, updatedTags)),
+      });
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    } catch {
+      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      setActionError("Tag konnte nicht entfernt werden.");
     }
   }
 
@@ -310,6 +353,53 @@ export default function RezeptDetail() {
           <span>·</span>
           <span>{portions} Portionen</span>
           {recipe.offline && <span className="chip">Offline</span>}
+        </div>
+
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+          {recipe.tags.map((tag) => (
+            <span
+              key={tag}
+              className="chip"
+              style={{ fontSize: 12, cursor: "pointer" }}
+              onClick={() => handleRemoveTag(tag)}
+            >
+              {tag} ×
+            </span>
+          ))}
+          {addingTag ? (
+            <input
+              className="input"
+              autoFocus
+              placeholder="Tag…"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newTag.trim()) handleAddTag();
+                if (e.key === "Escape") setAddingTag(false);
+              }}
+              onBlur={() => {
+                if (newTag.trim()) handleAddTag();
+                else setAddingTag(false);
+              }}
+              style={{ width: 100, fontSize: 12, padding: "4px 8px" }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddingTag(true)}
+              style={{
+                fontSize: 12,
+                padding: "4px 10px",
+                background: "none",
+                border: "1px dashed var(--border2)",
+                borderRadius: 12,
+                color: "var(--tx4)",
+                cursor: "pointer",
+              }}
+            >
+              +
+            </button>
+          )}
         </div>
 
         {actionError && (
