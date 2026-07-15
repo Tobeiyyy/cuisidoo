@@ -61,4 +61,30 @@ export const ingredientRoutes = new Hono<{ Bindings: Env }>()
     if (body.addAlias)
       await c.env.DB.prepare("INSERT OR IGNORE INTO ingredient_aliases (alias, ingredient_id) VALUES (?,?)").bind(body.addAlias, id).run();
     return c.json({ ok: true });
+  })
+  .post("/", async (c) => {
+    const { name, category, unit_dim, amountless } = await c.req.json<{
+      name: string; category: string; unit_dim: UnitDim; amountless?: boolean;
+    }>();
+    if (!name?.trim()) return c.json({ error: "Name ist erforderlich" }, 400);
+    if (!category?.trim()) return c.json({ error: "Kategorie ist erforderlich" }, 400);
+    if (!["mass", "volume", "count"].includes(unit_dim)) {
+      return c.json({ error: "Einheit muss mass, volume oder count sein" }, 400);
+    }
+    const existing = await c.env.DB.prepare(
+      "SELECT id FROM ingredients WHERE LOWER(name) = LOWER(?)",
+    ).bind(name.trim()).first();
+    if (existing) return c.json({ error: "Zutat existiert bereits" }, 409);
+
+    const res = await c.env.DB.prepare(
+      "INSERT INTO ingredients (name, category, unit_dim) VALUES (?,?,?) RETURNING id",
+    ).bind(name.trim(), category.trim(), unit_dim).first<{ id: number }>();
+    const ingredientId = res!.id;
+
+    const defaultQty = unit_dim === "count" ? 1 : 100;
+    await c.env.DB.prepare(
+      "INSERT INTO pantry (ingredient_id, quantity, amountless, updated_at) VALUES (?,?,?,datetime('now'))",
+    ).bind(ingredientId, amountless ? 0 : defaultQty, amountless ? 1 : 0).run();
+
+    return c.json({ id: ingredientId }, 201);
   });

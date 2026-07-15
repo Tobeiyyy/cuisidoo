@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api";
-import type { Ingredient, UnitDim } from "../../shared/types";
+import { api, createIngredient } from "../api";
+import type { Ingredient, PantryItem, UnitDim } from "../../shared/types";
 import { formatQuantity } from "../format";
 
-interface PantryItem {
-  ingredient_id: number;
-  name: string;
-  category: string;
-  unit_dim: UnitDim;
-  quantity: number;
-  updated_at: string;
-}
-
 type CatalogIngredient = Ingredient & { aliases: string | null };
+
+const CATEGORIES = [
+  "Gemüse & Obst", "Fleisch & Fisch", "Milchprodukte", "Grundnahrungsmittel",
+  "Gewürze", "Tiefkühl", "Getränke", "Sonstiges",
+] as const;
+
+const UNIT_DIM_OPTIONS = [
+  ["mass", "Gramm"],
+  ["volume", "Milliliter"],
+  ["count", "Stück"],
+] as const;
 
 function unitLabel(dim: UnitDim): string {
   if (dim === "mass") return "g";
@@ -44,6 +46,11 @@ export default function Vorrat() {
   const [showAdd, setShowAdd] = useState(false);
   const [addQuery, setAddQuery] = useState("");
   const [writeErrors, setWriteErrors] = useState<Set<number>>(new Set());
+  const [creating, setCreating] = useState(false);
+  const [newCategory, setNewCategory] = useState("Sonstiges");
+  const [newUnitDim, setNewUnitDim] = useState<UnitDim>("mass");
+  const [newAmountless, setNewAmountless] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Per-ingredient pending target quantity and debounce timer. Rapid stepper taps only update
   // these synchronously; a single PUT per ingredient fires after the debounce window with
@@ -156,7 +163,7 @@ export default function Vorrat() {
     queryClient.setQueryData<PantryItem[]>(["pantry"], (old) => {
       const next: PantryItem = {
         ingredient_id: ing.id, name: ing.name, category: ing.category,
-        unit_dim: ing.unit_dim, quantity, updated_at: new Date().toISOString(),
+        unit_dim: ing.unit_dim, quantity, amountless: false, updated_at: new Date().toISOString(),
       };
       return old ? [...old, next] : [next];
     });
@@ -168,6 +175,46 @@ export default function Vorrat() {
       });
     } finally {
       queryClient.invalidateQueries({ queryKey: ["pantry"] });
+    }
+  }
+
+  async function toggleAmountless(ingredientId: number, amountless: boolean) {
+    queryClient.setQueryData<PantryItem[]>(["pantry"], (old) =>
+      old?.map((p) => (p.ingredient_id === ingredientId ? { ...p, amountless } : p)));
+    try {
+      const item = pantry.find((p) => p.ingredient_id === ingredientId);
+      await api("/api/pantry", {
+        method: "PUT",
+        body: JSON.stringify({
+          ingredient_id: ingredientId,
+          quantity: item?.quantity ?? 0,
+          amountless,
+        }),
+      });
+    } catch {
+      setWriteErrors((prev) => new Set(prev).add(ingredientId));
+      queryClient.invalidateQueries({ queryKey: ["pantry"] });
+    }
+  }
+
+  async function handleCreateIngredient() {
+    setCreateError(null);
+    try {
+      await createIngredient({
+        name: addQuery.trim(),
+        category: newCategory,
+        unit_dim: newUnitDim,
+        amountless: newAmountless,
+      });
+      setCreating(false);
+      setAddQuery("");
+      setNewCategory("Sonstiges");
+      setNewUnitDim("mass");
+      setNewAmountless(false);
+      queryClient.invalidateQueries({ queryKey: ["pantry"] });
+      queryClient.invalidateQueries({ queryKey: ["ingredients"] });
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Erstellen fehlgeschlagen");
     }
   }
 
@@ -199,7 +246,46 @@ export default function Vorrat() {
             autoFocus
             style={{ marginBottom: 10 }}
           />
-          {searchResults.length === 0 ? (
+          {searchResults.length === 0 && addQuery.trim() ? (
+            creating ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 14, color: "var(--tx)", fontWeight: 500 }}>
+                  „{addQuery.trim()}" erstellen
+                </div>
+                <select className="input" value={newCategory} onChange={(e) => setNewCategory(e.target.value)}>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {UNIT_DIM_OPTIONS.map(([dim, label]) => (
+                    <label key={dim} style={{
+                      flex: 1, padding: "8px 0", textAlign: "center", fontSize: 13, cursor: "pointer",
+                      background: newUnitDim === dim ? "var(--accent)" : "var(--elev)",
+                      color: newUnitDim === dim ? "#fff" : "var(--tx3)",
+                      borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+                    }}>
+                      <input type="radio" name="unitDim" value={dim} checked={newUnitDim === dim}
+                        onChange={() => setNewUnitDim(dim)} style={{ display: "none" }} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--tx3)", cursor: "pointer" }}>
+                  <input type="checkbox" checked={newAmountless} onChange={(e) => setNewAmountless(e.target.checked)}
+                    style={{ accentColor: "var(--accent)" }} />
+                  Mengenfrei (immer da)
+                </label>
+                {createError && <p style={{ color: "var(--accent)", fontSize: 12, margin: 0 }}>{createError}</p>}
+                <button type="button" className="btn-accent" onClick={handleCreateIngredient}>
+                  Erstellen & hinzufügen
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="btn-ghost" onClick={() => setCreating(true)}
+                style={{ width: "100%", fontSize: 13 }}>
+                „{addQuery.trim()}" als neue Zutat erstellen
+              </button>
+            )
+          ) : searchResults.length === 0 ? (
             <p style={{ color: "var(--tx4)", fontSize: 13, margin: 0 }}>Keine Treffer.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", maxHeight: 240, overflowY: "auto" }}>
@@ -240,30 +326,51 @@ export default function Vorrat() {
                 <div className="list-row">
                   <span style={{ flex: 1, fontSize: 15, color: "var(--tx)" }}>{item.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {item.amountless ? (
+                      <span style={{ fontSize: 12, color: "var(--tx3)", background: "var(--line)", padding: "4px 10px", borderRadius: 6 }}>
+                        Immer da
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => adjustQuantity(item.ingredient_id, -stepFor(item.unit_dim))}
+                          aria-label={`${item.name} weniger`}
+                          style={{
+                            width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none",
+                            borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer",
+                          }}
+                        >
+                          −
+                        </button>
+                        <span style={{ fontSize: 14, color: "var(--tx)", minWidth: 64, textAlign: "center" }}>
+                          {formatQuantity(item.quantity, item.unit_dim === "count" ? "Stück" : "g")} {unitLabel(item.unit_dim)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => adjustQuantity(item.ingredient_id, stepFor(item.unit_dim))}
+                          aria-label={`${item.name} mehr`}
+                          style={{
+                            width: 30, height: 30, border: "none", background: "var(--accent)",
+                            borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer",
+                          }}
+                        >
+                          +
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
-                      onClick={() => adjustQuantity(item.ingredient_id, -stepFor(item.unit_dim))}
-                      aria-label={`${item.name} weniger`}
+                      onClick={() => toggleAmountless(item.ingredient_id, !item.amountless)}
+                      aria-label={item.amountless ? "Menge tracken" : "Als immer da markieren"}
+                      title={item.amountless ? "Menge tracken" : "Immer da"}
                       style={{
-                        width: 30, height: 30, border: "1.5px solid var(--border2)", background: "none",
-                        borderRadius: "var(--r-sm)", color: "var(--tx3)", fontSize: 16, cursor: "pointer",
+                        width: 30, height: 30, border: "1px solid var(--border2)", background: "none",
+                        borderRadius: "var(--r-sm)", color: item.amountless ? "var(--accent)" : "var(--tx4)",
+                        fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      −
-                    </button>
-                    <span style={{ fontSize: 14, color: "var(--tx)", minWidth: 64, textAlign: "center" }}>
-                      {formatQuantity(item.quantity, item.unit_dim === "count" ? "Stück" : "g")} {unitLabel(item.unit_dim)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => adjustQuantity(item.ingredient_id, stepFor(item.unit_dim))}
-                      aria-label={`${item.name} mehr`}
-                      style={{
-                        width: 30, height: 30, border: "none", background: "var(--accent)",
-                        borderRadius: "var(--r-sm)", color: "#fff", fontSize: 16, cursor: "pointer",
-                      }}
-                    >
-                      +
+                      ∞
                     </button>
                   </div>
                 </div>

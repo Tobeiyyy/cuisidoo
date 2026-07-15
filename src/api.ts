@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import type { NutritionScore, Recipe } from "../shared/types";
+import type { NutritionScore, Recipe, UnitDim } from "../shared/types";
 import {
   getMirroredRecipe,
   mirrorRecipe,
@@ -122,6 +122,16 @@ export async function uploadRecipeImage(id: string | number, blob: Blob): Promis
 /** Removes a recipe's photo (both the R2 object and the image_key column). */
 export async function deleteRecipeImage(id: string | number): Promise<void> {
   await api(`/api/recipes/${id}/image`, { method: "DELETE" });
+}
+
+/** Creates a new ingredient (with a pantry row) for free-form additions on the Vorrat page. */
+export async function createIngredient(data: {
+  name: string; category: string; unit_dim: UnitDim; amountless?: boolean;
+}): Promise<{ id: number }> {
+  return api<{ id: number }>("/api/ingredients", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
