@@ -52,6 +52,51 @@ Wenn das Rezept fertig durchdacht ist, gib es GENAU EINMAL über das Tool save_r
   return prompt;
 }
 
+export function buildImportPrompt(opts: {
+  equipmentOwned: string[]; canonicalNames: string[];
+  extraGeraeteErlaubt: boolean; pantry?: PantryPromptItem[];
+}): string {
+  const geraeteRegel = opts.extraGeraeteErlaubt
+    ? `Zusätzlich zum TM6 dürfen verwendet werden: ${opts.equipmentOwned.join(", ")}.`
+    : `Verwende den TM6 als einziges Kochgerät wenn möglich. Falls doch nötig: ${opts.equipmentOwned.join(", ")}.`;
+
+  let prompt = `Du bist ein Experte für Thermomix-TM6-Rezepte. Deine Aufgabe ist es, ein vorgegebenes Rezept in ein TM6-optimiertes Rezept umzuwandeln.
+
+## Anweisungen
+- Bewahre die Identität des Gerichts — Name, Geschmack und Charakter sollen erhalten bleiben.
+- Wandle Schritte in TM6-Schritte (kind="tm6") um wo der TM6 das zuverlässig und sinnvoll erledigen kann.
+- Behalte Schritte als off_device bei, wo der TM6 nicht geeignet ist (Backofen, Grill, Pfanne für Röstaromen, etc.).
+- ${geraeteRegel}
+- Optimiere Garzeiten und Temperaturen für den TM6 wo möglich.
+- Behalte Zutaten möglichst bei, passe Mengen an kanonische Einheiten an (g, ml, Stück).
+
+## TM6-Fähigkeiten
+- Stufen: 0,5 bis 10 sowie Turbo. Teigstufe für Knetteig. Linkslauf für schonendes Rühren.
+- Temperaturen: 37–160 °C sowie Varoma-Stufe zum Dämpfen.
+- Modi: Slow Cooking, Sous-vide, Fermentieren, Reiskocher, Wasserkocher, Eierkocher, Eindicken, Aufwärmen, Anbraten/Karamellisieren, Vorreinigen.
+- Zubehör: Mixtopf (2,2 l), Varoma (Behälter + Einlegeboden), Gareinsatz, Rühraufsatz (Schmetterling), Spatel, ZWEI Messbecher, Gemüse-Styler.
+
+## Zutaten-Regeln
+- Mengen in der kanonischen Dimension: mass→g, volume→ml, count→Stück. Informelle Einheiten (Prise, TL, EL, Spritzer) nur für Gewürze/Kleinstmengen.
+- Für count-Zutaten grams_per_piece schätzen.
+- scaling: "linear" (Standard), "damped" (intensive Gewürze), "fixed" (z.B. Wasser für Varoma-Tank).
+- Verwende für bekannte Zutaten EXAKT den gelisteten Namen: ${opts.canonicalNames.join(", ") || "(noch keine)"}
+- Kategorien: Gemüse & Obst, Fleisch & Fisch, Milchprodukte, Grundnahrungsmittel, Gewürze, Tiefkühl, Getränke, Sonstiges.
+
+Wenn das Rezept fertig umgewandelt ist, gib es GENAU EINMAL über das Tool save_recipe aus.`;
+
+  if (opts.pantry && opts.pantry.length > 0) {
+    const lines = opts.pantry.map((p) => {
+      if (p.amountless) return `- ${p.name}: immer da`;
+      const unit = p.unit_dim === "mass" ? "g" : p.unit_dim === "volume" ? "ml" : "Stück";
+      return `- ${p.name}: ${p.quantity} ${unit}`;
+    });
+    prompt += `\n\n## Vorrat des Nutzers\n${lines.join("\n")}\n\nHinweis: Du kannst auf Substitutionsmöglichkeiten aus dem Vorrat hinweisen, aber verändere das Originalrezept nicht grundlegend.`;
+  }
+
+  return prompt;
+}
+
 export const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
 const SPEEDS = ["0.5","1","1.5","2","2.5","3","3.5","4","4.5","5","5.5","6","6.5","7","7.5","8","8.5","9","9.5","10","Turbo","Teigstufe"];
 const MODES = ["Slow Cooking","Sous-vide","Fermentieren","Reiskocher","Wasserkocher","Eierkocher","Eindicken","Aufwärmen","Anbraten/Karamellisieren","Vorreinigen"];

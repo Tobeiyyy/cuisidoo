@@ -152,6 +152,25 @@ export async function fetchSuggestions(portionen: number, extraGeraeteErlaubt: b
   return res.suggestions;
 }
 
+/** Result of a recipe import: either a multi-recipe suggestion list, or a full RecipeSaveInput-shaped draft. */
+export interface ImportResult {
+  multi?: boolean;
+  suggestions?: Suggestion[];
+  title?: string;
+  // ... all RecipeSaveInput fields when single recipe
+  [key: string]: any;
+}
+
+/** Imports a recipe from pasted text or a URL, adapting it for the TM6 (Task 5). */
+export async function importRecipe(data: {
+  input: string; portionen: number; extraGeraeteErlaubt: boolean; selectedTitle?: string;
+}): Promise<ImportResult> {
+  return api<ImportResult>("/api/generate/import", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
 export function useScoreRecipe(id: string | undefined) {
   const queryClient = useQueryClient();

@@ -5,9 +5,11 @@ import { buildSystemPrompt, SAVE_RECIPE_TOOL, type PantryPromptItem } from "./pr
 import { qAll } from "./db";
 import type { UnitDim } from "../shared/types";
 import { suggestRoutes } from "./suggest";
+import { importRoutes } from "./import";
 
 export const generateRoutes = new Hono<{ Bindings: Env }>()
   .route("/suggest", suggestRoutes)
+  .route("/import", importRoutes)
   .post("/", async (c) => {
   const { wunsch, portionen, extraGeraeteErlaubt } = await c.req.json<{
     wunsch: string; portionen: number; extraGeraeteErlaubt?: boolean;
