@@ -195,11 +195,11 @@ The "Guten Appetit!" screen changes:
 
 If the deduction call fails (network error, etc.), show "Vorrat konnte nicht aktualisiert werden" with a retry button. Don't block the user from closing.
 
-## 7. Recipe Import (URL + Text Paste)
+## 7. Recipe Import (URL + Text Paste + YouTube via Bot)
 
 ### Problem
 
-Users have recipes from websites, cookbooks, or other sources they want to cook in TM6-optimized form. Currently the only way in is manual entry (tedious) or generation from a wish (doesn't reproduce a specific recipe).
+Users have recipes from websites, cookbooks, YouTube videos, and other sources they want to cook in TM6-optimized form. Currently the only way in is manual entry (tedious) or generation from a wish (doesn't reproduce a specific recipe).
 
 ### Flow
 
@@ -207,9 +207,12 @@ A new tab/mode on the Generieren page: **"Rezept importieren"** — a segmented 
 
 **Two input modes:**
 
-1. **URL paste** — User pastes a recipe URL. The backend uses the existing `web_search_20260209` server tool to fetch the page content. The AI reads the recipe and adapts it to TM6.
+1. **URL paste** — User pastes a recipe URL (website, not YouTube). The backend uses the existing `web_search_20260209` server tool to fetch the page content. The AI reads the recipe and adapts it to TM6.
 
-2. **Text paste** — User pastes raw recipe text (copied from a website, typed from a cookbook, or from a photo's OCR). The AI adapts the pasted text to TM6.
+2. **Text paste** — User pastes raw recipe text. This covers:
+   - Copied from a website
+   - Typed from a cookbook
+   - **Output from the YouTube summarizer bot** (see Schema E below)
 
 Both share a single textarea with a placeholder like "URL oder Rezepttext einfügen…". The backend detects whether the input starts with `http://` or `https://` to choose the mode.
 
@@ -217,31 +220,42 @@ Both share a single textarea with a placeholder like "URL oder Rezepttext einfü
 - Portionen stepper (same as regular generation)
 - Extra-Geräte-erlaubt checkbox (same as regular generation)
 
+### Multi-Recipe Handling
+
+When the pasted text contains multiple recipes (e.g., from a compilation video or a "10 best recipes" article), the import endpoint detects this and returns them as selectable suggestions — same pick-then-generate pattern as surprise-me:
+
+1. `POST /api/generate/import` with the full text.
+2. If the AI detects multiple recipes, it returns `{ multi: true, suggestions: [{ title, description }] }` without generating any full recipe.
+3. UI shows selectable cards. User picks which ones to import.
+4. Each selected recipe generates one at a time: the import endpoint is called again with `{ input: <original text>, selectedTitle: <picked title> }` so the AI knows which recipe to extract and adapt.
+5. User reviews each preview, saves or discards, then the next one generates.
+
+For single-recipe input, the endpoint returns the full adapted recipe directly (no selection step).
+
+### YouTube Integration via Summarizer Bot
+
+The user has an existing Discord bot that summarizes YouTube videos into Obsidian-formatted notes using transcript access. For YouTube cooking videos, the bot uses a dedicated **Schema E: Recipe Extract** (see appendix) that outputs structured recipe data.
+
+**Workflow:** Share YouTube URL in Discord → bot outputs recipe-formatted note → user copies the note content → pastes into the app's text import → AI adapts for TM6.
+
+This is the recommended path for YouTube recipes because:
+- The bot has full transcript access (the app's web_search cannot reliably extract YouTube transcripts).
+- Schema E outputs structured ingredients and steps, making TM6 adaptation more accurate.
+- Compilation videos with multiple recipes are handled: Schema E outputs each recipe as a separate section, and the app's multi-recipe detection picks them up as selectable cards.
+
 ### Backend
 
-New endpoint `POST /api/generate/import` with `{ input: string, portionen: number, extraGeraeteErlaubt: boolean }`.
+New endpoint `POST /api/generate/import` with `{ input: string, portionen: number, extraGeraeteErlaubt: boolean, selectedTitle?: string }`.
 
 Implementation:
 - If `input` starts with `http(s)://`: use `web_search` tool with a targeted search query containing the URL to fetch the page. The AI then extracts the recipe and adapts it.
 - If `input` is plain text: the AI receives it directly as user context and adapts it.
+- If the AI detects multiple recipes and no `selectedTitle` is provided: return suggestions only (no full generation, cheap).
+- If `selectedTitle` is provided: extract and adapt only that specific recipe from the input.
 - Both paths use the `SAVE_RECIPE_TOOL` schema for structured output (same as regular generation).
 - System prompt variation: instead of "create a recipe for [wish]", it says "adapt this recipe for TM6 while preserving the dish's identity. Keep non-TM6 steps as off_device where appropriate (oven, stove, grill). Optimize cooking times and temperatures for TM6 where possible."
 - Pantry contents are included (per section 3) so the AI can note substitution opportunities.
-- `source` on save: add `"imported"` to the allowed values in the D1 CHECK constraint and TypeScript type.
-
-### Result
-
-Same preview flow as regular generation — user sees the adapted recipe and can save or discard. The recipe is a full TM6-optimized version with both `tm6` and `off_device` steps as appropriate.
-
-### Migration
-
-`ALTER TABLE recipes` to update the CHECK constraint:
-```sql
--- D1 doesn't support ALTER CHECK, so this is handled in the new migration
--- by recreating the constraint or using a less restrictive check
-```
-
-Since D1/SQLite CHECK constraints can't be altered in place, the pragmatic approach: the existing CHECK already covers `'generated'` and `'manual'`. We add `'imported'` by using a new migration that creates a trigger or simply relaxes the constraint. Alternatively, since this is a single-user app, we can treat imported recipes as `source = 'generated'` with a tag to distinguish them — simpler, no schema change needed. **Decision: use `source = 'generated'` and auto-add an "Importiert" tag.** This avoids a schema migration while still letting the user filter imported recipes.
+- `source` on save: use `source = 'generated'` and auto-add an "Importiert" tag. This avoids a schema migration (D1/SQLite CHECK constraints can't be altered in place) while still letting the user filter imported recipes in the library.
 
 ## 8. Custom Tags & Cooking Journal
 
@@ -310,3 +324,139 @@ For the photo flow: the existing `POST /api/recipes/:id/image` upload endpoint i
 - Barcode scanning for pantry adds
 - OCR from cookbook photos (user pastes text manually)
 - Recipe version history / diff between original and adapted
+- Direct YouTube transcript extraction in the app (use the bot pipeline instead)
+
+## Appendix A: Schema E for YouTube Summarizer Bot
+
+Add this schema to the existing bot prompt alongside Schemas A–D.
+
+### Schema Detection
+
+```
+#### Schema E: The Recipe Extract
+* **Trigger:** Content demonstrates cooking, baking, food preparation, or is a recipe compilation/list
+* **Structure:**
+    1. **Dish** — Name of the dish, cuisine origin if mentioned, approximate total time
+    2. **Servings** — How many portions the recipe yields (if stated; otherwise `Servings not stated`)
+    3. **Ingredients** — One line per ingredient: `- {quantity} {unit} {name}` (e.g., `- 500 g Hähnchenbrust`). Group under `### Für {section}` sub-headers when the recipe has distinct components (dough, filling, sauce, etc.). If quantity is vague ("a handful", "some"), write it as-is
+    4. **Steps** — Numbered list, each step is one discrete action. Include time and temperature where mentioned. Flag equipment in brackets: `[Ofen]`, `[Standmixer]`, `[Pfanne]`, etc.
+    5. **Tips & Variations** — Substitutions, common mistakes, or variations the creator mentions. Omit if none
+* **Multi-recipe rule:** If the video contains multiple distinct recipes (compilation, "top 10", meal prep series), apply this schema **once per recipe** as separate sections under `## Recipe N: {Title} [{timestamp}]`. Each gets its own Ingredients + Steps
+```
+
+### Reference Output (Single Recipe)
+
+```
+# One-Pan Lemon Herb Chicken
+
+**Tags:** [[youtube]], [[chicken]], [[one-pan]], [[meal-prep]]
+**Source:** https://youtube.com/watch?v=example
+**Author:** Pro Home Cooks
+**Schema Applied:** E
+
+## Dish
+
+One-Pan Lemon Herb Chicken — Mediterranean-inspired, ~45 min total [00:15](https://youtu.be/example?t=15s)
+
+## Servings
+
+4 portions
+
+## Ingredients
+
+- 4 Stück Hähnchenschenkel (bone-in)
+- 500 g Kartoffeln (gewürfelt)
+- 2 Stück Zitronen
+- 4 Zehen Knoblauch
+- 3 EL Olivenöl
+- 1 TL Thymian (getrocknet)
+- 1 TL Rosmarin (getrocknet)
+- Salz und Pfeffer nach Geschmack
+
+## Steps
+
+1. Ofen auf 200°C vorheizen [01:30](https://youtu.be/example?t=1m30s) [Ofen]
+2. Kartoffeln würfeln und auf ein Backblech verteilen [02:10](https://youtu.be/example?t=2m10s)
+3. Hähnchen mit Olivenöl, Kräutern, Salz und Pfeffer einreiben [03:45](https://youtu.be/example?t=3m45s)
+4. Zitrone halbieren, Saft über Kartoffeln und Hähnchen verteilen [04:20](https://youtu.be/example?t=4m20s)
+5. Knoblauch zerdrücken und zwischen die Kartoffeln geben [04:50](https://youtu.be/example?t=4m50s)
+6. Hähnchen auf die Kartoffeln setzen, 35–40 Min backen bis goldbraun [05:15](https://youtu.be/example?t=5m15s) [Ofen]
+7. 5 Min ruhen lassen vor dem Servieren [06:30](https://youtu.be/example?t=6m30s)
+
+## Tips & Variations
+
+> Kartoffeln möglichst gleichmäßig würfeln damit sie gleichzeitig gar werden [03:00](https://youtu.be/example?t=3m)
+
+> Variante: Süßkartoffeln statt normaler Kartoffeln für mehr Süße [06:45](https://youtu.be/example?t=6m45s)
+```
+
+### Reference Output (Multi-Recipe Compilation)
+
+```
+# 5 Easy 15-Minute Dinners
+
+**Tags:** [[youtube]], [[meal-prep]], [[quick-meals]], [[weeknight-dinner]]
+**Source:** https://youtube.com/watch?v=example
+**Author:** Joshua Weissman
+**Schema Applied:** E
+
+> Note: Multi-recipe compilation — 5 recipes extracted individually.
+
+## Recipe 1: Garlic Butter Shrimp Pasta [00:30](https://youtu.be/example?t=30s)
+
+### Dish
+Garlic Butter Shrimp Pasta — Italian-inspired, ~12 min
+
+### Servings
+2 portions
+
+### Ingredients
+- 200 g Spaghetti
+- 250 g Garnelen (geschält)
+- 4 Zehen Knoblauch (gehackt)
+- 2 EL Butter
+- 1 EL Olivenöl
+- Prise Chiliflocken
+- Salz und Pfeffer nach Geschmack
+
+### Steps
+1. Pasta in Salzwasser kochen [00:45](https://youtu.be/example?t=45s) [Herd]
+2. Garnelen in Olivenöl scharf anbraten, 2 Min pro Seite [02:10](https://youtu.be/example?t=2m10s) [Pfanne]
+3. Knoblauch und Chiliflocken dazu, 30 Sek anbraten [03:30](https://youtu.be/example?t=3m30s) [Pfanne]
+4. Butter und 2 EL Pastawasser einrühren [04:00](https://youtu.be/example?t=4m)
+5. Pasta unterheben, durchschwenken [04:20](https://youtu.be/example?t=4m20s)
+
+## Recipe 2: Teriyaki Chicken Bowl [05:00](https://youtu.be/example?t=5m)
+
+### Dish
+Teriyaki Chicken Bowl — Japanese-inspired, ~15 min
+
+### Servings
+2 portions
+
+### Ingredients
+- 300 g Hähnchenbrust (in Streifen)
+- 200 g Reis (gekocht)
+- 3 EL Sojasauce
+- 2 EL Honig
+- 1 EL Reisessig
+- 1 TL Ingwer (gerieben)
+- 1 Stück Frühlingszwiebel
+
+### Steps
+1. Hähnchen in Streifen schneiden [05:15](https://youtu.be/example?t=5m15s)
+2. In heißer Pfanne anbraten bis goldbraun, 4–5 Min [05:45](https://youtu.be/example?t=5m45s) [Pfanne]
+3. Sojasauce, Honig, Reisessig und Ingwer mischen [06:30](https://youtu.be/example?t=6m30s)
+4. Sauce zum Hähnchen geben, einkochen lassen bis glasig [07:00](https://youtu.be/example?t=7m)
+5. Auf Reis anrichten, mit Frühlingszwiebeln garnieren [07:30](https://youtu.be/example?t=7m30s)
+
+[... Recipe 3–5 continue in same pattern ...]
+```
+
+### Integration with Existing Bot Prompt
+
+Add Schema E to the `INTELLIGENT SCHEMA DETECTION` section after Schema D. Add to the schema selection priority rule: "Cooking content always triggers Schema E regardless of secondary schema matches (a cooking tutorial is Schema E, not Schema A)."
+
+### Short-Form Exception for Schema E
+
+For videos under 8 minutes with a single recipe, compress by merging Dish + Servings into one line and omitting Tips if none exist. Multi-recipe compilations under 8 minutes are unlikely but handled normally if they occur.
