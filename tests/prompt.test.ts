@@ -36,6 +36,29 @@ describe("SAVE_RECIPE_TOOL", () => {
   });
 });
 
+describe("buildSystemPrompt pantry section", () => {
+  it("includes pantry items when provided", () => {
+    const prompt = buildSystemPrompt({
+      ...base,
+      pantry: [
+        { name: "Zwiebel", quantity: 3, unit_dim: "count", amountless: false },
+        { name: "Salz", quantity: 0, unit_dim: "mass", amountless: true },
+      ],
+    });
+    expect(prompt).toContain("Zwiebel: 3 Stück");
+    expect(prompt).toContain("Salz: immer da");
+    expect(prompt).toContain("Bevorzuge Zutaten aus dem Vorrat");
+  });
+  it("omits pantry section when empty", () => {
+    const prompt = buildSystemPrompt({ ...base, pantry: [] });
+    expect(prompt).not.toContain("Vorrat des Nutzers");
+  });
+  it("omits pantry section when not provided", () => {
+    const prompt = buildSystemPrompt(base);
+    expect(prompt).not.toContain("Vorrat des Nutzers");
+  });
+});
+
 // These lists ARE the contract between worker/recipes.ts's RecipeSaveInput and the tool schema
 // the model is asked to fill in — hard-coded here (rather than derived from the type) so a schema
 // edit that silently drifts from RecipeSaveInput's fields fails this test instead of shipping.

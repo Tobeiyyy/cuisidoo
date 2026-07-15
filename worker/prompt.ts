@@ -1,11 +1,21 @@
+import type { UnitDim } from "../shared/types";
+
+export interface PantryPromptItem {
+  name: string;
+  quantity: number;
+  unit_dim: UnitDim;
+  amountless: boolean;
+}
+
 export function buildSystemPrompt(opts: {
   equipmentOwned: string[]; dietBias: string; canonicalNames: string[]; extraGeraeteErlaubt: boolean;
+  pantry?: PantryPromptItem[];
 }): string {
   const geraeteRegel = opts.extraGeraeteErlaubt
     ? `Zusätzlich zum TM6 dürfen verwendet werden: ${opts.equipmentOwned.join(", ")}. Schritte an diesen Geräten sind kind="off_device" mit gesetztem device.`
     : `Verwende den TM6 als einziges Kochgerät, außer der Wunsch impliziert eindeutig ein anderes Gerät. Falls doch nötig, sind nur diese Geräte vorhanden: ${opts.equipmentOwned.join(", ")}. Solche Schritte sind kind="off_device" mit gesetztem device. Kühlschrank/Gefrierschrank betreffen nur Lagerhinweise, nie Kochschritte.`;
 
-  return `Du bist ein Experte für Thermomix-TM6-Rezepte. Erstelle ein vollständiges, alltagstaugliches Rezept auf Deutsch. Recherchiere zuerst mit der Websuche nach bewährten Rezepten und Garzeiten als Grundlage, übernimm aber nie Text wörtlich — formuliere eigenständig und passe alles an den TM6 an.
+  let prompt = `Du bist ein Experte für Thermomix-TM6-Rezepte. Erstelle ein vollständiges, alltagstaugliches Rezept auf Deutsch. Recherchiere zuerst mit der Websuche nach bewährten Rezepten und Garzeiten als Grundlage, übernimm aber nie Text wörtlich — formuliere eigenständig und passe alles an den TM6 an.
 
 ## TM6-Fähigkeiten (vollständig, nichts anderes existiert)
 - Stufen: 0,5 bis 10 sowie Turbo. Teigstufe für Knetteig. Linkslauf (reverse) für schonendes Rühren.
@@ -29,6 +39,17 @@ export function buildSystemPrompt(opts: {
 ${opts.dietBias}
 
 Wenn das Rezept fertig durchdacht ist, gib es GENAU EINMAL über das Tool save_recipe aus.`;
+
+  if (opts.pantry && opts.pantry.length > 0) {
+    const lines = opts.pantry.map((p) => {
+      if (p.amountless) return `- ${p.name}: immer da`;
+      const unit = p.unit_dim === "mass" ? "g" : p.unit_dim === "volume" ? "ml" : "Stück";
+      return `- ${p.name}: ${p.quantity} ${unit}`;
+    });
+    prompt += `\n\n## Vorrat des Nutzers\nFolgende Zutaten sind verfügbar:\n${lines.join("\n")}\n\nBevorzuge Zutaten aus dem Vorrat wenn möglich, aber schränke dich nicht darauf ein.\nWenn der Nutzer einen konkreten Wunsch hat, hat dieser Vorrang vor dem Vorrat.`;
+  }
+
+  return prompt;
 }
 
 export const UNITS = ["g", "ml", "Stück", "Prise", "TL", "EL", "Spritzer"];
