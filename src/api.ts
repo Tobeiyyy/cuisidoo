@@ -128,10 +128,18 @@ export async function deleteRecipeImage(id: string | number): Promise<void> {
 export async function createIngredient(data: {
   name: string; category: string; unit_dim: UnitDim; amountless?: boolean;
 }): Promise<{ id: number }> {
-  return api<{ id: number }>("/api/ingredients", {
+  const res = await fetch("/api/ingredients", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    credentials: "same-origin",
   });
+  if (res.status === 401) throw new UnauthorizedError();
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Fehler ${res.status}`);
+  }
+  return res.json();
 }
 
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */

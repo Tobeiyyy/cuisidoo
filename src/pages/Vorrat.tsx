@@ -179,15 +179,16 @@ export default function Vorrat() {
   }
 
   async function toggleAmountless(ingredientId: number, amountless: boolean) {
+    const item = pantry.find((p) => p.ingredient_id === ingredientId);
+    const quantity = amountless ? 0 : defaultQuantityFor(item?.unit_dim ?? "count");
     queryClient.setQueryData<PantryItem[]>(["pantry"], (old) =>
-      old?.map((p) => (p.ingredient_id === ingredientId ? { ...p, amountless } : p)));
+      old?.map((p) => (p.ingredient_id === ingredientId ? { ...p, amountless, quantity } : p)));
     try {
-      const item = pantry.find((p) => p.ingredient_id === ingredientId);
       await api("/api/pantry", {
         method: "PUT",
         body: JSON.stringify({
           ingredient_id: ingredientId,
-          quantity: item?.quantity ?? 0,
+          quantity,
           amountless,
         }),
       });

@@ -72,8 +72,9 @@ export const ingredientRoutes = new Hono<{ Bindings: Env }>()
       return c.json({ error: "Einheit muss mass, volume oder count sein" }, 400);
     }
     const existing = await c.env.DB.prepare(
-      "SELECT id FROM ingredients WHERE LOWER(name) = LOWER(?)",
-    ).bind(name.trim()).first();
+      "SELECT id FROM ingredients WHERE LOWER(name) = LOWER(?) " +
+      "UNION SELECT ingredient_id AS id FROM ingredient_aliases WHERE LOWER(alias) = LOWER(?)",
+    ).bind(name.trim(), name.trim()).first();
     if (existing) return c.json({ error: "Zutat existiert bereits" }, 409);
 
     const res = await c.env.DB.prepare(
