@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, fetchSuggestions, importRecipe } from "../api";
 import RecipeBody from "../components/RecipeBody";
 import type { RecipeSaveInput } from "../../worker/recipes";
+import type { Suggestion } from "../../worker/suggest";
 
 const STATUS_MESSAGES = ["Suche Rezeptideen…", "Prüfe TM6-Schritte…", "Passe an den TM6 an…"];
 
-type Phase = "form" | "loading" | "error" | "preview";
+type Mode = "generate" | "surprise" | "import";
+type Phase = "form" | "loading" | "error" | "preview" | "suggesting" | "picking";
 
 function SkeletonBlock({ height, width = "100%" }: { height: number; width?: number | string }) {
   return (
@@ -23,9 +25,94 @@ function SkeletonBlock({ height, width = "100%" }: { height: number; width?: num
   );
 }
 
+/** Shared portionen stepper + extra-geräte checkbox, reused across all three modes' forms. */
+function SharedControls({
+  portionen,
+  onChangePortionen,
+  extraGeraeteErlaubt,
+  onChangeExtraGeraete,
+}: {
+  portionen: number;
+  onChangePortionen: (next: number) => void;
+  extraGeraeteErlaubt: boolean;
+  onChangeExtraGeraete: (next: boolean) => void;
+}) {
+  return (
+    <>
+      <div
+        className="card"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", marginBottom: 16 }}
+      >
+        <span style={{ fontSize: 15, color: "var(--tx)", fontWeight: 500 }}>Portionen</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button
+            type="button"
+            onClick={() => onChangePortionen(Math.max(1, portionen - 1))}
+            aria-label="Weniger Portionen"
+            style={{
+              width: 38,
+              height: 38,
+              border: "1.5px solid var(--border2)",
+              background: "none",
+              borderRadius: "var(--r-sm)",
+              color: "var(--tx3)",
+              fontSize: 20,
+              cursor: "pointer",
+            }}
+          >
+            −
+          </button>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", minWidth: 28, textAlign: "center" }}>
+            {portionen}
+          </span>
+          <button
+            type="button"
+            onClick={() => onChangePortionen(Math.min(24, portionen + 1))}
+            aria-label="Mehr Portionen"
+            style={{
+              width: 38,
+              height: 38,
+              background: "var(--accent)",
+              border: "none",
+              borderRadius: "var(--r-sm)",
+              color: "#fff",
+              fontSize: 20,
+              cursor: "pointer",
+            }}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <label
+        className="card"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 16px",
+          marginBottom: 24,
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: 15, color: "var(--tx)", fontWeight: 500 }}>Weitere Küchengeräte erlauben</span>
+        <input
+          type="checkbox"
+          checked={extraGeraeteErlaubt}
+          onChange={(e) => onChangeExtraGeraete(e.target.checked)}
+          style={{ width: 20, height: 20, accentColor: "var(--accent)", cursor: "pointer" }}
+        />
+      </label>
+    </>
+  );
+}
+
 export default function Generieren() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [mode, setMode] = useState<Mode>("generate");
 
   const [wunsch, setWunsch] = useState("");
   const [portionen, setPortionen] = useState(2);
@@ -50,6 +137,23 @@ export default function Generieren() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Surprise-me ("Überrasch mich!") state.
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
+  const [suggestQueue, setSuggestQueue] = useState<string[]>([]);
+
+  // Import state.
+  const [importInput, setImportInput] = useState("");
+  const [importSuggestions, setImportSuggestions] = useState<Suggestion[]>([]);
+  const [selectedImports, setSelectedImports] = useState<Set<number>>(new Set());
+  const [importQueue, setImportQueue] = useState<{ input: string; title: string }[]>([]);
+
+  // Holds "retry this exact attempt" so the error screen's retry button repeats whichever
+  // operation actually failed (initial generate, suggest fetch, import, or a queued item) with
+  // its original arguments — rather than guessing from `mode`, which can't disambiguate a queued
+  // generate/import call from the mode's initial action.
+  const retryRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     if (phase !== "loading") return;
     setStatusIndex(0);
@@ -59,14 +163,29 @@ export default function Generieren() {
     return () => clearInterval(interval);
   }, [phase]);
 
-  async function runGenerate() {
+  function handlePortionenChange(next: number) {
+    setPortionenTouched(true);
+    setPortionen(next);
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setPhase("form");
+  }
+
+  async function runGenerate(wunschOverride?: string) {
+    // `wunschOverride` lets queue-driven callers (surprise-me picking, queue advance) pass the
+    // next title directly — `setWunsch` alone wouldn't be visible here yet since state updates
+    // aren't synchronous, so reading the `wunsch` closure variable would send the previous value.
+    const effectiveWunsch = (wunschOverride ?? wunsch).trim();
+    retryRef.current = () => runGenerate(wunschOverride);
     setPhase("loading");
     setErrorMsg(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ wunsch: wunsch.trim(), portionen, extraGeraeteErlaubt }),
+        body: JSON.stringify({ wunsch: effectiveWunsch, portionen, extraGeraeteErlaubt }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -83,17 +202,103 @@ export default function Generieren() {
     }
   }
 
+  async function runSuggest() {
+    retryRef.current = () => runSuggest();
+    setPhase("suggesting");
+    setErrorMsg(null);
+    try {
+      const s = await fetchSuggestions(portionen, extraGeraeteErlaubt);
+      setSuggestions(s);
+      setSelectedSuggestions(new Set());
+      setPhase("picking");
+    } catch {
+      setErrorMsg("Vorschläge konnten nicht geladen werden.");
+      setPhase("error");
+    }
+  }
+
+  async function runImport(selectedTitle?: string) {
+    retryRef.current = () => runImport(selectedTitle);
+    setPhase("loading");
+    setErrorMsg(null);
+    try {
+      const res = await importRecipe({
+        input: importInput.trim(), portionen, extraGeraeteErlaubt, selectedTitle,
+      });
+      if (res.multi && res.suggestions) {
+        setImportSuggestions(res.suggestions);
+        setSelectedImports(new Set());
+        setPhase("picking");
+        return;
+      }
+      setDraft(res as unknown as RecipeSaveInput);
+      setPhase("preview");
+    } catch {
+      setErrorMsg("Import fehlgeschlagen. Bitte erneut versuchen.");
+      setPhase("error");
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!wunsch.trim() || phase === "loading") return;
     runGenerate();
   }
 
+  function advanceSuggestQueue() {
+    const remaining = suggestQueue.slice(1);
+    setSuggestQueue(remaining);
+    if (remaining.length > 0) {
+      setWunsch(remaining[0]);
+      setDraft(null);
+      setSaveError(null);
+      runGenerate(remaining[0]);
+    } else {
+      setPhase("form");
+      setWunsch("");
+    }
+  }
+
+  function advanceImportQueue() {
+    const remaining = importQueue.slice(1);
+    setImportQueue(remaining);
+    if (remaining.length > 0) {
+      setDraft(null);
+      setSaveError(null);
+      runImport(remaining[0].title);
+    } else {
+      setPhase("form");
+      setImportInput("");
+    }
+  }
+
+  function confirmSuggestionPicking() {
+    if (mode === "import") {
+      const queue = [...selectedImports].map((i) => ({ input: importInput.trim(), title: importSuggestions[i].title }));
+      setImportQueue(queue);
+      runImport(queue[0].title);
+    } else {
+      const queue = [...selectedSuggestions].map((i) => suggestions[i].title);
+      setSuggestQueue(queue);
+      setWunsch(queue[0]);
+      runGenerate(queue[0]);
+    }
+  }
+
   function handleDiscard() {
     setDraft(null);
     setSaveError(null);
+    if (suggestQueue.length > 1) {
+      advanceSuggestQueue();
+      return;
+    }
+    if (importQueue.length > 1) {
+      advanceImportQueue();
+      return;
+    }
+    setSuggestQueue([]);
+    setImportQueue([]);
     setPhase("form");
-    // wunsch (and portionen/toggle) intentionally kept so the user can tweak and retry.
   }
 
   async function handleSave() {
@@ -115,6 +320,16 @@ export default function Generieren() {
       const { id } = (await res.json()) as { id: number };
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
       queryClient.invalidateQueries({ queryKey: ["ingredients"] });
+      if (suggestQueue.length > 1) {
+        setSaving(false);
+        advanceSuggestQueue();
+        return;
+      }
+      if (importQueue.length > 1) {
+        setSaving(false);
+        advanceImportQueue();
+        return;
+      }
       navigate(`/rezept/${id}`);
     } catch {
       setSaveError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
@@ -122,13 +337,54 @@ export default function Generieren() {
     }
   }
 
+  // The picking phase is shared by "surprise" and "import" modes — pick the right backing state.
+  const pickingItems = mode === "import" ? importSuggestions : suggestions;
+  const pickingSelected = mode === "import" ? selectedImports : selectedSuggestions;
+  const setPickingSelected = mode === "import" ? setSelectedImports : setSelectedSuggestions;
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Generieren</h1>
       </div>
 
-      {phase === "form" && (
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          marginBottom: 20,
+          background: "var(--elev)",
+          borderRadius: "var(--r-md)",
+          overflow: "hidden",
+          border: "1px solid var(--line)",
+        }}
+      >
+        {([
+          ["generate", "Generieren"],
+          ["surprise", "Überrasch mich!"],
+          ["import", "Importieren"],
+        ] as const).map(([m, label]) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => switchMode(m)}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              fontSize: 13,
+              fontWeight: 600,
+              border: "none",
+              cursor: "pointer",
+              background: mode === m ? "var(--accent)" : "transparent",
+              color: mode === m ? "#fff" : "var(--tx3)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "generate" && phase === "form" && (
         <form onSubmit={handleSubmit}>
           <textarea
             className="input"
@@ -140,76 +396,113 @@ export default function Generieren() {
             style={{ resize: "vertical", marginBottom: 16 }}
           />
 
-          <div
-            className="card"
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", marginBottom: 16 }}
-          >
-            <span style={{ fontSize: 15, color: "var(--tx)", fontWeight: 500 }}>Portionen</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <button
-                type="button"
-                onClick={() => { setPortionenTouched(true); setPortionen((p) => Math.max(1, p - 1)); }}
-                aria-label="Weniger Portionen"
-                style={{
-                  width: 38,
-                  height: 38,
-                  border: "1.5px solid var(--border2)",
-                  background: "none",
-                  borderRadius: "var(--r-sm)",
-                  color: "var(--tx3)",
-                  fontSize: 20,
-                  cursor: "pointer",
-                }}
-              >
-                −
-              </button>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", minWidth: 28, textAlign: "center" }}>
-                {portionen}
-              </span>
-              <button
-                type="button"
-                onClick={() => { setPortionenTouched(true); setPortionen((p) => Math.min(24, p + 1)); }}
-                aria-label="Mehr Portionen"
-                style={{
-                  width: 38,
-                  height: 38,
-                  background: "var(--accent)",
-                  border: "none",
-                  borderRadius: "var(--r-sm)",
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                }}
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <label
-            className="card"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "12px 16px",
-              marginBottom: 24,
-              cursor: "pointer",
-            }}
-          >
-            <span style={{ fontSize: 15, color: "var(--tx)", fontWeight: 500 }}>Weitere Küchengeräte erlauben</span>
-            <input
-              type="checkbox"
-              checked={extraGeraeteErlaubt}
-              onChange={(e) => setExtraGeraeteErlaubt(e.target.checked)}
-              style={{ width: 20, height: 20, accentColor: "var(--accent)", cursor: "pointer" }}
-            />
-          </label>
+          <SharedControls
+            portionen={portionen}
+            onChangePortionen={handlePortionenChange}
+            extraGeraeteErlaubt={extraGeraeteErlaubt}
+            onChangeExtraGeraete={setExtraGeraeteErlaubt}
+          />
 
           <button type="submit" className="btn-accent" disabled={!wunsch.trim()}>
             Rezept generieren
           </button>
         </form>
+      )}
+
+      {mode === "surprise" && phase === "form" && (
+        <div>
+          <SharedControls
+            portionen={portionen}
+            onChangePortionen={handlePortionenChange}
+            extraGeraeteErlaubt={extraGeraeteErlaubt}
+            onChangeExtraGeraete={setExtraGeraeteErlaubt}
+          />
+          <button type="button" className="btn-accent" onClick={runSuggest} style={{ marginTop: 16 }}>
+            Rezeptvorschläge laden
+          </button>
+        </div>
+      )}
+
+      {mode === "import" && phase === "form" && (
+        <div>
+          <textarea
+            className="input"
+            placeholder="URL oder Rezepttext einfügen…"
+            value={importInput}
+            onChange={(e) => setImportInput(e.target.value)}
+            rows={6}
+            autoFocus
+            style={{ resize: "vertical", marginBottom: 16 }}
+          />
+
+          <SharedControls
+            portionen={portionen}
+            onChangePortionen={handlePortionenChange}
+            extraGeraeteErlaubt={extraGeraeteErlaubt}
+            onChangeExtraGeraete={setExtraGeraeteErlaubt}
+          />
+
+          <button
+            type="button"
+            className="btn-accent"
+            disabled={!importInput.trim()}
+            onClick={() => runImport()}
+            style={{ marginTop: 16 }}
+          >
+            Rezept importieren
+          </button>
+        </div>
+      )}
+
+      {phase === "suggesting" && (
+        <div className="card" style={{ padding: 20, textAlign: "center" }}>
+          <p style={{ color: "var(--tx3)", fontSize: 14 }}>Suche Rezeptvorschläge aus deinem Vorrat…</p>
+        </div>
+      )}
+
+      {phase === "picking" && (
+        <div>
+          <h2 style={{ fontSize: 16, marginBottom: 16 }}>Rezeptvorschläge</h2>
+          {pickingItems.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() =>
+                setPickingSelected((prev) => {
+                  const next = new Set(prev);
+                  next.has(i) ? next.delete(i) : next.add(i);
+                  return next;
+                })
+              }
+              className="card"
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: 16,
+                marginBottom: 10,
+                border: pickingSelected.has(i) ? "2px solid var(--accent)" : "1px solid var(--line)",
+                background: "var(--raise)",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--tx)", marginBottom: 4 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: "var(--tx3)" }}>{s.description}</div>
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn-accent"
+            disabled={pickingSelected.size === 0}
+            onClick={confirmSuggestionPicking}
+            style={{ marginTop: 8 }}
+          >
+            {pickingSelected.size === 1 ? "Rezept generieren" : `${pickingSelected.size} Rezepte generieren`}
+          </button>
+          <button type="button" className="btn-ghost" onClick={() => setPhase("form")} style={{ marginTop: 8 }}>
+            Zurück
+          </button>
+        </div>
       )}
 
       {phase === "loading" && (
@@ -238,7 +531,12 @@ export default function Generieren() {
           <p style={{ color: "var(--accent)", fontSize: 14, marginBottom: 16 }} role="alert">
             {errorMsg}
           </p>
-          <button type="button" className="btn-accent" onClick={runGenerate} style={{ marginBottom: 10 }}>
+          <button
+            type="button"
+            className="btn-accent"
+            onClick={() => retryRef.current()}
+            style={{ marginBottom: 10 }}
+          >
             Erneut versuchen
           </button>
           <button type="button" className="btn-ghost" onClick={handleDiscard}>
@@ -283,6 +581,13 @@ export default function Generieren() {
           {saveError && (
             <p style={{ color: "var(--accent)", fontSize: 14, margin: "16px 0" }} role="alert">
               {saveError}
+            </p>
+          )}
+
+          {(suggestQueue.length > 1 || importQueue.length > 1) && (
+            <p style={{ color: "var(--tx3)", fontSize: 13, margin: "16px 0 0" }}>
+              Noch {(suggestQueue.length > 1 ? suggestQueue.length : importQueue.length) - 1} weitere{" "}
+              {(suggestQueue.length > 1 ? suggestQueue.length : importQueue.length) - 1 === 1 ? "Rezept" : "Rezepte"} in der Warteschlange
             </p>
           )}
 
