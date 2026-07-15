@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { NutritionScore, Recipe, UnitDim } from "../shared/types";
+import type { Suggestion } from "../worker/suggest";
 import {
   getMirroredRecipe,
   mirrorRecipe,
@@ -140,6 +141,15 @@ export async function createIngredient(data: {
     throw new Error(body?.error ?? `Fehler ${res.status}`);
   }
   return res.json();
+}
+
+/** Fetches 3 pantry-aware "surprise me" recipe idea suggestions. */
+export async function fetchSuggestions(portionen: number, extraGeraeteErlaubt: boolean): Promise<Suggestion[]> {
+  const res = await api<{ suggestions: Suggestion[] }>("/api/generate/suggest", {
+    method: "POST",
+    body: JSON.stringify({ portionen, extraGeraeteErlaubt }),
+  });
+  return res.suggestions;
 }
 
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
