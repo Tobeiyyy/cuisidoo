@@ -4,7 +4,7 @@ import type { Scaling, RecipeStep, UnitDim } from "../shared/types";
 import { resolveIngredients, matchIngredient, normalizeName } from "./ingredients";
 import { getFullRecipe, qAll } from "./db";
 import { scoreHandler } from "./nutrition";
-import { cookedHandler } from "./shopping";
+import { cookedHandler, checkPantryHandler } from "./shopping";
 import { UNITS } from "./prompt";
 
 export interface RecipeSaveInput {
@@ -191,6 +191,7 @@ export const recipeRoutes = new Hono<{ Bindings: Env }>()
   })
   .post("/:id/score", scoreHandler)
   .post("/:id/cooked", cookedHandler)
+  .get("/:id/check-pantry", checkPantryHandler)
   .post("/:id/image", async (c) => {
     const id = Number(c.req.param("id"));
     const recipe = await c.env.DB.prepare("SELECT image_key FROM recipes WHERE id=?").bind(id)

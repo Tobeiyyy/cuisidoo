@@ -171,6 +171,32 @@ export async function importRecipe(data: {
   });
 }
 
+/** A single ingredient missing (fully or partially) from the pantry, scaled to the requested servings. */
+export interface MissingIngredient {
+  ingredient_id: number; name: string; needed: number; available: number; unit: string;
+}
+
+/** Checks how much of each ingredient is missing from the pantry for a recipe at the given servings (Task 7). */
+export async function checkPantry(recipeId: string | number, servings: number): Promise<MissingIngredient[]> {
+  const res = await api<{ missing: MissingIngredient[] }>(`/api/recipes/${recipeId}/check-pantry?servings=${servings}`);
+  return res.missing;
+}
+
+/** Adds a batch of missing ingredients to the shopping list, one POST per item (Task 7). */
+export async function addToShoppingList(items: { ingredient_id: number; label: string; quantity: number; unit: string; category: string }[]): Promise<void> {
+  for (const item of items) {
+    await api("/api/shopping", {
+      method: "POST",
+      body: JSON.stringify({
+        label: item.label,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category || "Sonstiges",
+      }),
+    });
+  }
+}
+
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
 export function useScoreRecipe(id: string | undefined) {
   const queryClient = useQueryClient();

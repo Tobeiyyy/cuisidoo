@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, useRecipe } from "../api";
+import { addToShoppingList, api, checkPantry, useRecipe, type MissingIngredient } from "../api";
 import { scaleQuantity } from "../../shared/scaling";
 import { formatQuantity, formatSeconds, formatTemp } from "../format";
 import type { RecipeIngredient, RecipeStep } from "../../shared/types";
@@ -52,7 +52,10 @@ export default function Kochmodus() {
   const [running, setRunning] = useState(false);
   const [flash, setFlash] = useState(false);
   const [ingredientsOpen, setIngredientsOpen] = useState(false);
-  const [cookedState, setCookedState] = useState<"idle" | "saving" | "error">("idle");
+  const [missingItems, setMissingItems] = useState<MissingIngredient[]>([]);
+  const [missingDismissed, setMissingDismissed] = useState(false);
+  const [addingToList, setAddingToList] = useState(false);
+  const [deductState, setDeductState] = useState<"pending" | "done" | "error">("pending");
 
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -124,6 +127,28 @@ export default function Kochmodus() {
     [step, recipe?.ingredients],
   );
 
+  // Warns about pantry gaps for this recipe at the current portion count; shown as a dismissable
+  // banner on the first step only (see banner render below).
+  useEffect(() => {
+    if (!id || !recipe) return;
+    checkPantry(id, portions).then(setMissingItems).catch(() => {});
+  }, [id, recipe, portions]);
+
+  // Auto-deducts the cooked recipe's ingredients from the pantry once cooking finishes — replaces
+  // the old manual "Zutaten aus Vorrat abbuchen" button (Task 7).
+  useEffect(() => {
+    if (!finished || !id) return;
+    api(`/api/recipes/${id}/cooked`, {
+      method: "POST",
+      body: JSON.stringify({ servings: Math.round(portions) }),
+    })
+      .then(() => {
+        setDeductState("done");
+        queryClient.invalidateQueries({ queryKey: ["pantry"] });
+      })
+      .catch(() => setDeductState("error"));
+  }, [finished, id, portions]);
+
   if (isLoading) {
     return (
       <div className="page no-nav" style={{ background: "var(--cook-bg)" }}>
@@ -183,21 +208,6 @@ export default function Kochmodus() {
     }
   }
 
-  async function handleAbbuchen() {
-    setCookedState("saving");
-    try {
-      await api(`/api/recipes/${id}/cooked`, {
-        method: "POST",
-        body: JSON.stringify({ servings: Math.round(portions) }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["pantry"] });
-      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
-      navigate(`/rezept/${id}`);
-    } catch {
-      setCookedState("error");
-    }
-  }
-
   if (finished) {
     return (
       <div
@@ -214,15 +224,28 @@ export default function Kochmodus() {
       >
         <h1 style={{ fontSize: 26, margin: "0 0 8px" }}>Guten Appetit!</h1>
         <p style={{ color: "var(--tx3)", fontSize: 15, margin: 0 }}>{recipe.title}</p>
-        {cookedState === "error" && (
-          <p style={{ color: "var(--accent)", fontSize: 13, marginTop: 16 }} role="alert">
-            Vorrat konnte nicht aktualisiert werden. Bitte später erneut versuchen.
-          </p>
+        {deductState === "done" && (
+          <p style={{ color: "var(--tx3)", fontSize: 13, marginTop: 16 }}>Vorrat aktualisiert ✓</p>
+        )}
+        {deductState === "error" && (
+          <div style={{ marginTop: 16 }}>
+            <p style={{ color: "var(--accent)", fontSize: 13, marginBottom: 8 }} role="alert">
+              Vorrat konnte nicht aktualisiert werden.
+            </p>
+            <button
+              className="btn-ghost"
+              onClick={() => {
+                setDeductState("pending");
+                // re-trigger the effect
+                setFinished(false);
+                setTimeout(() => setFinished(true), 0);
+              }}
+            >
+              Erneut versuchen
+            </button>
+          </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 32 }}>
-          <button className="btn-accent" onClick={handleAbbuchen} disabled={cookedState === "saving"}>
-            {cookedState === "saving" ? "Speichert…" : "Zutaten aus Vorrat abbuchen"}
-          </button>
           <button className="btn-ghost" onClick={() => navigate(`/rezept/${id}`)}>
             Schließen
           </button>
@@ -272,6 +295,63 @@ export default function Kochmodus() {
           </button>
         </div>
       </div>
+
+      {stepIndex === 0 && missingItems.length > 0 && !missingDismissed && (
+        <div
+          style={{
+            background: "var(--raise)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-md)",
+            padding: 14,
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--accent)" }}>Fehlende Zutaten</span>
+            <button
+              type="button"
+              onClick={() => setMissingDismissed(true)}
+              aria-label="Hinweis schließen"
+              style={{ background: "none", border: "none", color: "var(--tx4)", cursor: "pointer", fontSize: 16 }}
+            >
+              ✕
+            </button>
+          </div>
+          {missingItems.map((m) => (
+            <div key={m.ingredient_id} style={{ fontSize: 13, color: "var(--tx3)", marginBottom: 2 }}>
+              {formatQuantity(m.needed - m.available, m.unit)} {m.unit} {m.name}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn-ghost"
+            disabled={addingToList}
+            onClick={async () => {
+              setAddingToList(true);
+              try {
+                await addToShoppingList(
+                  missingItems.map((m) => ({
+                    ingredient_id: m.ingredient_id,
+                    label: m.name,
+                    quantity: m.needed - m.available,
+                    unit: m.unit,
+                    category: "",
+                  })),
+                );
+                setMissingDismissed(true);
+                queryClient.invalidateQueries({ queryKey: ["shopping"] });
+              } catch {
+                // ignore — banner stays open so the user can retry
+              } finally {
+                setAddingToList(false);
+              }
+            }}
+            style={{ marginTop: 8, fontSize: 13 }}
+          >
+            {addingToList ? "Wird hinzugefügt…" : "Zur Einkaufsliste"}
+          </button>
+        </div>
+      )}
 
       {isTm6 ? (
         <>

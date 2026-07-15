@@ -208,3 +208,35 @@ export async function cookedHandler(c: Context<{ Bindings: Env }>) {
   if (stmts.length) await c.env.DB.batch(stmts);
   return c.json({ ok: true });
 }
+
+// GET /api/recipes/:id/check-pantry — mounted from worker/recipes.ts (see cookedHandler comment
+// above for why the route wiring lives there while the pantry logic lives here). Reports, per
+// scaled ingredient, how much is missing from the pantry — used by Kochmodus to warn before
+// cooking starts.
+export async function checkPantryHandler(c: Context<{ Bindings: Env }>) {
+  const recipeId = Number(c.req.param("id"));
+  const recipe = await getFullRecipe(c.env.DB, recipeId);
+  if (!recipe) return c.json({ error: "not found" }, 404);
+  const servings = Number(c.req.query("servings") ?? recipe.servings_base);
+  if (!Number.isFinite(servings) || servings < 1) {
+    return c.json({ error: "servings must be >= 1" }, 400);
+  }
+  const factor = servings / recipe.servings_base;
+  const pantry = await loadPantryMap(c.env.DB);
+
+  const missing: { ingredient_id: number; name: string; needed: number; available: number; unit: string; category: string }[] = [];
+  for (const ing of recipe.ingredients) {
+    const entry = pantry.get(ing.ingredient_id);
+    if (entry?.amountless) continue;
+    if (isInformalUnit(ing.unit)) {
+      if (!entry) missing.push({ ingredient_id: ing.ingredient_id, name: ing.name, needed: ing.quantity, available: 0, unit: ing.unit, category: "" });
+      continue;
+    }
+    const scaled = scaleQuantity(ing.quantity, ing.scaling, factor, ing.unit);
+    const available = entry?.quantity ?? 0;
+    if (available < scaled) {
+      missing.push({ ingredient_id: ing.ingredient_id, name: ing.name, needed: scaled, available, unit: ing.unit, category: "" });
+    }
+  }
+  return c.json({ missing });
+}
