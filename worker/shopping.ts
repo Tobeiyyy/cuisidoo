@@ -44,14 +44,18 @@ export function aggregateNeeds(entries: PlanEntryForAggregation[]): Need[] {
   return [...groups.values()];
 }
 
-export function subtractPantry(needs: Need[], pantry: Map<number, number>): Need[] {
+export interface PantryEntry { quantity: number; amountless: boolean }
+
+export function subtractPantry(needs: Need[], pantry: Map<number, PantryEntry>): Need[] {
   const result: Need[] = [];
   for (const need of needs) {
+    const entry = pantry.get(need.ingredient_id);
+    if (entry?.amountless) continue;
     if (need.informal) {
-      if (!pantry.has(need.ingredient_id)) result.push(need);
+      if (!entry) result.push(need);
       continue;
     }
-    const remainder = need.quantity - (pantry.get(need.ingredient_id) ?? 0);
+    const remainder = need.quantity - (entry?.quantity ?? 0);
     if (remainder > 0) result.push({ ...need, quantity: remainder });
   }
   return result;
@@ -90,11 +94,11 @@ async function loadEntriesForRange(db: D1Database, from: string, to: string): Pr
   }));
 }
 
-async function loadPantryMap(db: D1Database): Promise<Map<number, number>> {
-  const rows = await qAll<{ ingredient_id: number; quantity: number }>(
-    db.prepare("SELECT ingredient_id, quantity FROM pantry"),
+async function loadPantryMap(db: D1Database): Promise<Map<number, PantryEntry>> {
+  const rows = await qAll<{ ingredient_id: number; quantity: number; amountless: number }>(
+    db.prepare("SELECT ingredient_id, quantity, amountless FROM pantry"),
   );
-  return new Map(rows.map((r) => [r.ingredient_id, r.quantity]));
+  return new Map(rows.map((r) => [r.ingredient_id, { quantity: r.quantity, amountless: !!r.amountless }]));
 }
 
 export const shoppingRoutes = new Hono<{ Bindings: Env }>()
@@ -190,10 +194,10 @@ export async function cookedHandler(c: Context<{ Bindings: Env }>) {
   const stmts: D1PreparedStatement[] = [];
   for (const ing of recipe.ingredients) {
     if (isInformalUnit(ing.unit)) continue;
-    const current = pantry.get(ing.ingredient_id);
-    if (current === undefined) continue;
+    const entry = pantry.get(ing.ingredient_id);
+    if (!entry || entry.amountless) continue;
     const scaled = scaleQuantity(ing.quantity, ing.scaling, factor, ing.unit);
-    const next = Math.max(0, current - scaled);
+    const next = Math.max(0, entry.quantity - scaled);
     if (next <= 0) {
       stmts.push(c.env.DB.prepare("DELETE FROM pantry WHERE ingredient_id=?").bind(ing.ingredient_id));
     } else {

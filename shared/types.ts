@@ -37,3 +37,12 @@ export const INFORMAL_UNITS = ["Prise", "TL", "EL", "Spritzer", "Msp."] as const
 export function isInformalUnit(unit: string): boolean {
   return (INFORMAL_UNITS as readonly string[]).includes(unit);
 }
+export interface PantryItem {
+  ingredient_id: number;
+  name: string;
+  category: string;
+  unit_dim: UnitDim;
+  quantity: number;
+  amountless: boolean;
+  updated_at: string;
+}

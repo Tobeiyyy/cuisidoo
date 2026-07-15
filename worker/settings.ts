@@ -4,24 +4,26 @@ import { qAll } from "./db";
 
 export const pantryRoutes = new Hono<{ Bindings: Env }>()
   .get("/", async (c) => {
-    const rows = await qAll(c.env.DB.prepare(
-      "SELECT p.ingredient_id, i.name, i.category, i.unit_dim, p.quantity, p.updated_at " +
+    const rows = await qAll<any>(c.env.DB.prepare(
+      "SELECT p.ingredient_id, i.name, i.category, i.unit_dim, p.quantity, p.amountless, p.updated_at " +
       "FROM pantry p JOIN ingredients i ON i.id = p.ingredient_id " +
       "ORDER BY i.category, i.name"));
-    return c.json(rows);
+    return c.json(rows.map((r: any) => ({ ...r, amountless: !!r.amountless })));
   })
   .put("/", async (c) => {
-    const { ingredient_id, quantity } = await c.req.json<{ ingredient_id: number; quantity: number }>();
-    if (!Number.isFinite(quantity)) {
+    const { ingredient_id, quantity, amountless } = await c.req.json<{
+      ingredient_id: number; quantity: number; amountless?: boolean;
+    }>();
+    if (!Number.isFinite(quantity) && !amountless) {
       return c.json({ error: "quantity must be a finite number" }, 400);
     }
-    if (quantity <= 0) {
+    if (!amountless && quantity <= 0) {
       await c.env.DB.prepare("DELETE FROM pantry WHERE ingredient_id=?").bind(ingredient_id).run();
     } else {
       await c.env.DB.prepare(
-        "INSERT INTO pantry (ingredient_id, quantity, updated_at) VALUES (?,?,datetime('now')) " +
-        "ON CONFLICT(ingredient_id) DO UPDATE SET quantity=excluded.quantity, updated_at=excluded.updated_at",
-      ).bind(ingredient_id, quantity).run();
+        "INSERT INTO pantry (ingredient_id, quantity, amountless, updated_at) VALUES (?,?,?,datetime('now')) " +
+        "ON CONFLICT(ingredient_id) DO UPDATE SET quantity=excluded.quantity, amountless=excluded.amountless, updated_at=excluded.updated_at",
+      ).bind(ingredient_id, amountless ? 0 : quantity, amountless ? 1 : 0).run();
     }
     return c.json({ ok: true });
   });
