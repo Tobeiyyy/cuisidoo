@@ -171,6 +171,15 @@ export default function Generieren() {
   function switchMode(next: Mode) {
     setMode(next);
     setPhase("form");
+    setSuggestions([]);
+    setSelectedSuggestions(new Set());
+    setSuggestQueue([]);
+    setImportSuggestions([]);
+    setSelectedImports(new Set());
+    setImportQueue([]);
+    setDraft(null);
+    setSaveError(null);
+    setErrorMsg(null);
   }
 
   async function runGenerate(wunschOverride?: string) {
@@ -367,7 +376,9 @@ export default function Generieren() {
           <button
             key={m}
             type="button"
-            onClick={() => switchMode(m)}
+            onClick={() => {
+              if (phase === "form" || phase === "error") switchMode(m);
+            }}
             style={{
               flex: 1,
               padding: "10px 0",
@@ -377,6 +388,8 @@ export default function Generieren() {
               cursor: "pointer",
               background: mode === m ? "var(--accent)" : "transparent",
               color: mode === m ? "#fff" : "var(--tx3)",
+              opacity: phase !== "form" && phase !== "error" && mode !== m ? 0.4 : 1,
+              pointerEvents: phase !== "form" && phase !== "error" && mode !== m ? "none" : "auto",
             }}
           >
             {label}
@@ -586,8 +599,11 @@ export default function Generieren() {
 
           {(suggestQueue.length > 1 || importQueue.length > 1) && (
             <p style={{ color: "var(--tx3)", fontSize: 13, margin: "16px 0 0" }}>
-              Noch {(suggestQueue.length > 1 ? suggestQueue.length : importQueue.length) - 1} weitere{" "}
-              {(suggestQueue.length > 1 ? suggestQueue.length : importQueue.length) - 1 === 1 ? "Rezept" : "Rezepte"} in der Warteschlange
+              {(() => {
+                const remaining = (suggestQueue.length > 1 ? suggestQueue.length : importQueue.length) - 1;
+                return remaining === 1 ? "Noch 1 weiteres Rezept" : `Noch ${remaining} weitere Rezepte`;
+              })()}{" "}
+              in der Warteschlange
             </p>
           )}
 
