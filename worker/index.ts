@@ -6,6 +6,7 @@ import { generateRoutes } from "./generate";
 import { pantryRoutes, settingsRoutes, equipmentRoutes } from "./settings";
 import { planRoutes } from "./plan";
 import { shoppingRoutes } from "./shopping";
+import { scanRoutes } from "./scan";
 
 export type Env = {
   DB: D1Database;
@@ -64,6 +65,7 @@ app.get("/api/images/*", async (c) => {
 app.route("/api/ingredients", ingredientRoutes);
 app.route("/api/recipes", recipeRoutes);
 app.route("/api/generate", generateRoutes);
+app.route("/api/pantry/scan", scanRoutes);
 app.route("/api/pantry", pantryRoutes);
 app.route("/api/settings", settingsRoutes);
 app.route("/api/equipment", equipmentRoutes);

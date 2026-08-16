@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, createIngredient } from "../api";
+import { api, createIngredient, scanReceipt, downscaleImage } from "../api";
+import type { ScannedItem } from "../api";
 import type { Ingredient, PantryItem, UnitDim } from "../../shared/types";
 import { formatQuantity } from "../format";
 
@@ -51,6 +52,13 @@ export default function Vorrat() {
   const [newUnitDim, setNewUnitDim] = useState<UnitDim>("mass");
   const [newAmountless, setNewAmountless] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanResults, setScanResults] = useState<ScannedItem[] | null>(null);
+  const [scanChecked, setScanChecked] = useState<Set<number>>(new Set());
+  const [applying, setApplying] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   // Per-ingredient pending target quantity and debounce timer. Rapid stepper taps only update
   // these synchronously; a single PUT per ingredient fires after the debounce window with
@@ -219,6 +227,115 @@ export default function Vorrat() {
     }
   }
 
+  async function handleScanFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setScanning(true);
+    setScanError(null);
+    setScanResults(null);
+    try {
+      const blob = await downscaleImage(file);
+      const items = await scanReceipt(blob);
+      if (items.length === 0) {
+        setScanError("Keine Lebensmittel auf dem Bon erkannt.");
+      } else {
+        setScanResults(items);
+        setScanChecked(new Set(items.map((_, i) => i)));
+      }
+    } catch (err) {
+      setScanError(err instanceof Error && err.message ? err.message : "Scan fehlgeschlagen");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  async function applyScanResults() {
+    if (!scanResults) return;
+    setApplying(true);
+    setScanError(null);
+    const applied = new Set<number>();
+    try {
+      // A receipt can list the same product twice (or the model can split one product into two
+      // rows), so aggregate selected rows per ingredient first — otherwise each row would
+      // compute its additive update from the same stale base and the last write would win.
+      const byIngredient = new Map<number, { qty: number; indices: number[] }>();
+      const newItems = new Map<string, { item: ScannedItem; qty: number; indices: number[] }>();
+      scanResults.forEach((item, i) => {
+        if (!scanChecked.has(i)) return;
+        if (item.ingredient_id) {
+          const cur = byIngredient.get(item.ingredient_id) ?? { qty: 0, indices: [] };
+          cur.qty += item.quantity;
+          cur.indices.push(i);
+          byIngredient.set(item.ingredient_id, cur);
+        } else {
+          const key = (item.matched_name ?? item.receipt_name).trim().toLowerCase();
+          const cur = newItems.get(key) ?? { item, qty: 0, indices: [] };
+          cur.qty += item.quantity;
+          cur.indices.push(i);
+          newItems.set(key, cur);
+        }
+      });
+
+      for (const [ingredientId, { qty, indices }] of byIngredient) {
+        const existing = pantry.find((p) => p.ingredient_id === ingredientId);
+        // "Immer da" items track no amount — a plain quantity PUT would silently flip them
+        // back to tracked, so leave them untouched.
+        if (existing?.amountless) {
+          for (const i of indices) applied.add(i);
+          continue;
+        }
+        // A pending debounced stepper write is superseded by this one: the optimistic cache
+        // (and thus `existing.quantity`) already includes its target, and letting it fire
+        // later would overwrite the scan result with the pre-scan value.
+        const timer = flushTimers.current.get(ingredientId);
+        if (timer) clearTimeout(timer);
+        flushTimers.current.delete(ingredientId);
+        pendingQuantities.current.delete(ingredientId);
+        await api("/api/pantry", {
+          method: "PUT",
+          body: JSON.stringify({ ingredient_id: ingredientId, quantity: (existing?.quantity ?? 0) + qty }),
+        });
+        for (const i of indices) applied.add(i);
+      }
+
+      // createIngredient seeds the pantry row with a default quantity; the follow-up PUT
+      // replaces it with the scanned amount.
+      for (const { item, qty, indices } of newItems.values()) {
+        const { id } = await createIngredient({
+          name: item.matched_name ?? item.receipt_name,
+          category: item.category,
+          unit_dim: item.unit_dim as UnitDim,
+        });
+        await api("/api/pantry", {
+          method: "PUT",
+          body: JSON.stringify({ ingredient_id: id, quantity: qty }),
+        });
+        for (const i of indices) applied.add(i);
+      }
+
+      setScanResults(null);
+      setScanChecked(new Set());
+    } catch {
+      // Drop the rows that were already written so a retry can't double-apply them, and
+      // remap the checked set to the surviving rows' new indices.
+      const remaining: ScannedItem[] = [];
+      const remainingChecked = new Set<number>();
+      scanResults.forEach((item, i) => {
+        if (applied.has(i)) return;
+        if (scanChecked.has(i)) remainingChecked.add(remaining.length);
+        remaining.push(item);
+      });
+      setScanResults(remaining.length ? remaining : null);
+      setScanChecked(remainingChecked);
+      setScanError("Einige Einträge konnten nicht gespeichert werden.");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["pantry"] });
+      queryClient.invalidateQueries({ queryKey: ["ingredients"] });
+      setApplying(false);
+    }
+  }
+
   const isEmpty = pantryQuery.isSuccess && pantry.length === 0;
 
   return (
@@ -227,15 +344,106 @@ export default function Vorrat() {
         <h1>Vorrat</h1>
       </div>
 
-      <button
-        type="button"
-        className="btn-ghost"
-        onClick={() => setShowAdd((v) => !v)}
-        style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-      >
-        <PlusIcon />
-        Zutat hinzufügen
-      </button>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => setShowAdd((v) => !v)}
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <PlusIcon />
+          Zutat hinzufügen
+        </button>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => scanInputRef.current?.click()}
+          disabled={scanning}
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: scanning ? 0.5 : 1 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M7 9h10M7 13h10M7 17h6" />
+          </svg>
+          {scanning ? "Scannt…" : "Bon scannen"}
+        </button>
+        <input
+          ref={scanInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleScanFile}
+          style={{ display: "none" }}
+        />
+      </div>
+
+      {scanError && (
+        <p style={{ color: "var(--accent)", fontSize: 13, margin: "0 0 16px", textAlign: "center" }}>
+          {scanError}
+        </p>
+      )}
+
+      {scanResults && (
+        <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+          <h3 style={{ margin: "0 0 12px", fontSize: 15 }}>
+            Erkannte Artikel ({scanResults.filter((_, i) => scanChecked.has(i)).length}/{scanResults.length})
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto" }}>
+            {scanResults.map((item, i) => (
+              <label key={i} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 0",
+                borderBottom: i < scanResults.length - 1 ? "1px solid var(--line)" : "none",
+                opacity: scanChecked.has(i) ? 1 : 0.4, cursor: "pointer",
+              }}>
+                <input
+                  type="checkbox"
+                  checked={scanChecked.has(i)}
+                  onChange={() => setScanChecked((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(i)) next.delete(i);
+                    else next.add(i);
+                    return next;
+                  })}
+                  style={{ accentColor: "var(--accent)" }}
+                />
+                <span style={{ flex: 1, fontSize: 14 }}>
+                  {item.matched_name ?? item.receipt_name}
+                  {item.matched_name && item.matched_name !== item.receipt_name && (
+                    <span style={{ fontSize: 11, color: "var(--tx4)", marginLeft: 6 }}>
+                      ({item.receipt_name})
+                    </span>
+                  )}
+                </span>
+                <span style={{ fontSize: 13, color: "var(--tx3)", whiteSpace: "nowrap" }}>
+                  +{item.quantity}{item.unit_dim === "mass" ? "g" : item.unit_dim === "volume" ? "ml" : "×"}
+                </span>
+                {!item.ingredient_id && (
+                  <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 600 }}>NEU</span>
+                )}
+              </label>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => { setScanResults(null); setScanChecked(new Set()); }}
+              style={{ flex: 1 }}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn-accent"
+              onClick={applyScanResults}
+              disabled={applying || scanChecked.size === 0}
+              style={{ flex: 1, opacity: applying ? 0.5 : 1 }}
+            >
+              {applying ? "Wird gespeichert…" : "Vorrat aktualisieren"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div className="card" style={{ padding: 12, marginBottom: 20 }}>

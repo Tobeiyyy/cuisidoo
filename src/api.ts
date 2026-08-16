@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { NutritionScore, Recipe, UnitDim } from "../shared/types";
 import type { Suggestion } from "../worker/suggest";
+import type { ScannedItem } from "../worker/scan";
+export type { ScannedItem };
 import {
   getMirroredRecipe,
   mirrorRecipe,
@@ -228,6 +230,22 @@ export function buildTagsUpdate(recipe: Recipe, tags: string[]) {
     })),
     steps: recipe.steps,
   };
+}
+
+/** Scans a receipt image and returns matched pantry items for confirmation. */
+export async function scanReceipt(blob: Blob): Promise<ScannedItem[]> {
+  const res = await fetch("/api/pantry/scan", {
+    method: "POST",
+    headers: { "content-type": "image/jpeg" },
+    body: blob,
+  });
+  if (res.status === 401) throw new UnauthorizedError();
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Fehler ${res.status}`);
+  }
+  const data = await res.json() as { items: ScannedItem[] };
+  return data.items;
 }
 
 /** Triggers (or re-triggers with force=1) the cached nutrition score for a recipe. */
