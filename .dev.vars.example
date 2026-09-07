@@ -1,0 +1,8 @@
+# Anthropic API key used for recipe generation, import, suggestions, receipt scanning and nutrition scoring
+ANTHROPIC_API_KEY=
+
+# Passphrase required to log in to the app (single-user auth)
+AUTH_PASSPHRASE=
+
+# Random secret used to sign the auth cookie (any long random string)
+AUTH_SECRET=
